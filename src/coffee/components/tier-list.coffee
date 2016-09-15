@@ -8,11 +8,16 @@ TierListComponent = createClass
     tier: ''
     civ: ''
   onTierChange: (e) ->
-    this.setState {tier: e.target.value}
+    if !e.target.value.isNaN
+      this.setState
+        tier: e.target.value
   onCivChange: (e) ->
-    this.setState {civ: e.target.value}
+    console.log e.target.selected
+    this.setState
+      civ: e.target.selected
   onSubmit: (e) ->
     e.preventDefault()
+    console.log 'memes'
     if this.state.tier.isNaN
       return
     if 0 <= this.state.tier < this.state.list.length
@@ -23,11 +28,20 @@ TierListComponent = createClass
       nextList.push [this.state.civ]
     nextTier = ''
     nextCiv = ''
+    this.setState(
+      list: nextList
+      tier: nextTier
+      civ: nextCiv
+      )
+  createCiv: (civ, index) ->
+    li key: index, civ
+  createTier: (tier) ->
+    i = 0
+    a = []
+    while i <= tier.length
+      a.push this.createCiv tier[i], i
+    return ol null, a
   render: ->
-    createCiv = (civ) ->
-      li null, civ
-    createTier = (tier) ->
-      ol null, tier.map createCiv
     return(
       div
         id: "tier-list"
@@ -37,12 +51,13 @@ TierListComponent = createClass
             onSubmit: this.onSubmit
             input
               id: "tier-input"
+              type: "number"
               onChange: this.onTierChange
               value: this.state.tier
             select
               name: "civ"
               onChange: this.onCivChange
-              value: this.state.civ
+              selected: this.state.civ
               option
                 value: "America"
                 "America"
@@ -178,7 +193,7 @@ TierListComponent = createClass
         div
           id: "list"
           ol null,
-            this.state.list.map createTier
+            this.state.list.map this.createTier
     )
 
 module.exports = TierListComponent

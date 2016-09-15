@@ -1,7 +1,7 @@
 module.exports = {
   entry: './src/coffee/index.coffee',
   output: {
-    path: './dist',
+    path: '.',
     filename: 'bundle.js'
   },
   resolve: {
