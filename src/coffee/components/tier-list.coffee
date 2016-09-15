@@ -1,23 +1,22 @@
 {createElement, createClass, DOM} = require 'react'
 {render} = require 'react-dom'
-{div, form, input, button, li, ol, option, select} = DOM
+{div, form, input, button, li, ol, ul, option, select} = DOM
 
 TierListComponent = createClass
   getInitialState: ->
     list: localStorage.getItem('civroster') || []
-    tier: ''
-    civ: ''
+    tier: '0'
+    civ: 'America'
   onTierChange: (e) ->
     if !e.target.value.isNaN
       this.setState
         tier: e.target.value
   onCivChange: (e) ->
-    console.log e.target.selected
+    console.log e
     this.setState
       civ: e.target.selected
   onSubmit: (e) ->
     e.preventDefault()
-    console.log 'memes'
     if this.state.tier.isNaN
       return
     if 0 <= this.state.tier < this.state.list.length
@@ -26,6 +25,7 @@ TierListComponent = createClass
     else
       nextList = this.state.list
       nextList.push [this.state.civ]
+    console.log nextList
     nextTier = ''
     nextCiv = ''
     this.setState(
@@ -33,14 +33,24 @@ TierListComponent = createClass
       tier: nextTier
       civ: nextCiv
       )
-  createCiv: (civ, index) ->
-    li key: index, civ
-  createTier: (tier) ->
-    i = 0
+  createCiv: (tier, index) ->
+    li
+      key: index
+      tier[index]
+  createTier: (index) ->
     a = []
-    while i <= tier.length
-      a.push this.createCiv tier[i], i
-    return ol null, a
+    i = 0
+    while i < this.state.list[index].length
+      a.push ul null, this.createCiv this.state.list[index], i
+      i++
+    return a
+  createList: ->
+    a = []
+    i = 0
+    while i < this.state.list.length
+      a.push this.createTier i
+      i++
+    return a
   render: ->
     return(
       div
@@ -57,7 +67,7 @@ TierListComponent = createClass
             select
               name: "civ"
               onChange: this.onCivChange
-              selected: this.state.civ
+              value: this.state.civ
               option
                 value: "America"
                 "America"
@@ -193,7 +203,7 @@ TierListComponent = createClass
         div
           id: "list"
           ol null,
-            this.state.list.map this.createTier
+            this.createList()
     )
 
 module.exports = TierListComponent

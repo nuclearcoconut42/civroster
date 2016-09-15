@@ -21455,20 +21455,20 @@
 /* 173 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var DOM, TierListComponent, button, createClass, createElement, div, form, input, li, ol, option, ref, render, select;
+	var DOM, TierListComponent, button, createClass, createElement, div, form, input, li, ol, option, ref, render, select, ul;
 
 	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, DOM = ref.DOM;
 
 	render = __webpack_require__(34).render;
 
-	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, option = DOM.option, select = DOM.select;
+	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, ul = DOM.ul, option = DOM.option, select = DOM.select;
 
 	TierListComponent = createClass({
 	  getInitialState: function() {
 	    return {
 	      list: localStorage.getItem('civroster') || [],
-	      tier: '',
-	      civ: ''
+	      tier: '0',
+	      civ: 'America'
 	    };
 	  },
 	  onTierChange: function(e) {
@@ -21479,7 +21479,7 @@
 	    }
 	  },
 	  onCivChange: function(e) {
-	    console.log(e.target.selected);
+	    console.log(e);
 	    return this.setState({
 	      civ: e.target.selected
 	    });
@@ -21487,7 +21487,6 @@
 	  onSubmit: function(e) {
 	    var nextCiv, nextList, nextTier, ref1;
 	    e.preventDefault();
-	    console.log('memes');
 	    if (this.state.tier.isNaN) {
 	      return;
 	    }
@@ -21498,6 +21497,7 @@
 	      nextList = this.state.list;
 	      nextList.push([this.state.civ]);
 	    }
+	    console.log(nextList);
 	    nextTier = '';
 	    nextCiv = '';
 	    return this.setState({
@@ -21506,19 +21506,30 @@
 	      civ: nextCiv
 	    });
 	  },
-	  createCiv: function(civ, index) {
+	  createCiv: function(tier, index) {
 	    return li({
 	      key: index
-	    }, civ);
+	    }, tier[index]);
 	  },
-	  createTier: function(tier) {
+	  createTier: function(index) {
 	    var a, i;
-	    i = 0;
 	    a = [];
-	    while (i <= tier.length) {
-	      a.push(this.createCiv(tier[i], i));
+	    i = 0;
+	    while (i < this.state.list[index].length) {
+	      a.push(ul(null, this.createCiv(this.state.list[index], i)));
+	      i++;
 	    }
-	    return ol(null, a);
+	    return a;
+	  },
+	  createList: function() {
+	    var a, i;
+	    a = [];
+	    i = 0;
+	    while (i < this.state.list.length) {
+	      a.push(this.createTier(i));
+	      i++;
+	    }
+	    return a;
 	  },
 	  render: function() {
 	    return div({
@@ -21535,7 +21546,7 @@
 	    }), select({
 	      name: "civ",
 	      onChange: this.onCivChange,
-	      selected: this.state.civ
+	      value: this.state.civ
 	    }, option({
 	      value: "America"
 	    }, "America"), option({
@@ -21626,7 +21637,7 @@
 	      type: "submit"
 	    }, "Submit to tier " + this.state.tier))), div({
 	      id: "list"
-	    }, ol(null, this.state.list.map(this.createTier))));
+	    }, ol(null, this.createList())));
 	  }
 	});
 
