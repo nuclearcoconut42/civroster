@@ -21464,6 +21464,8 @@
 	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, ul = DOM.ul, option = DOM.option, select = DOM.select;
 
 	TierListComponent = createClass({
+	  onSave: localStorage.setItem('civroster', this.state.list),
+	  onClear: localStorage.setItem('civroster', []),
 	  getInitialState: function() {
 	    return {
 	      list: localStorage.getItem('civroster') || [],
@@ -21661,7 +21663,13 @@
 	    }, ol({
 	      start: "0"
 	    }, this.createList())), button({
-	      id: "Generate",
+	      id: "save",
+	      onClick: this.onSave
+	    }, "Save tier list to local storage"), button({
+	      id: "clear",
+	      onClick: this.onClear
+	    }, "Remove tier list from local storage"), button({
+	      id: "generate",
 	      onClick: this.onGenerate
 	    }, "Generate Roster"), this.createRoster());
 	  }
