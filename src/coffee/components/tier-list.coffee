@@ -3,9 +3,9 @@
 {div, form, input, button, li, ol, ul, option, select} = DOM
 
 TierListComponent = createClass
-  onSave:
+  onSave: ->
     localStorage.setItem 'civroster', this.state.list
-  onClear:
+  onClear: ->
     localStorage.setItem 'civroster', []
   getInitialState: ->
     list: localStorage.getItem('civroster') || []

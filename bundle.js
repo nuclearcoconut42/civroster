@@ -21464,8 +21464,12 @@
 	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, ul = DOM.ul, option = DOM.option, select = DOM.select;
 
 	TierListComponent = createClass({
-	  onSave: localStorage.setItem('civroster', this.state.list),
-	  onClear: localStorage.setItem('civroster', []),
+	  onSave: function() {
+	    return localStorage.setItem('civroster', this.state.list);
+	  },
+	  onClear: function() {
+	    return localStorage.setItem('civroster', []);
+	  },
 	  getInitialState: function() {
 	    return {
 	      list: localStorage.getItem('civroster') || [],
