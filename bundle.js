@@ -21472,7 +21472,7 @@
 	  },
 	  getInitialState: function() {
 	    return {
-	      list: localStorage.getItem('civroster') || [],
+	      list: JSON.parse(localStorage.getItem('civroster')) || [],
 	      tier: '0',
 	      civ: 'America',
 	      roster: []
