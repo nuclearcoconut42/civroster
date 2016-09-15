@@ -7,8 +7,6 @@ RootComponent = createClass
   render: ->
       div
         id: "root"
-        p null,
-          "hi"
         TierListComponent null
 
 module.exports = createElement(RootComponent)

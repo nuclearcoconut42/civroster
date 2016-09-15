@@ -21444,7 +21444,7 @@
 	  render: function() {
 	    return div({
 	      id: "root"
-	    }, p(null, "hi"), TierListComponent(null));
+	    }, TierListComponent(null));
 	  }
 	});
 
