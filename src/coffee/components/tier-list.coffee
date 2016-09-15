@@ -7,31 +7,26 @@ TierListComponent = createClass
     list: localStorage.getItem('civroster') || []
     tier: '0'
     civ: 'America'
+    roster: []
   onTierChange: (e) ->
-    if !e.target.value.isNaN
+    if !e.target.value.isNaN || !e.target.value
       this.setState
         tier: e.target.value
   onCivChange: (e) ->
-    console.log e
     this.setState
-      civ: e.target.selected
+      civ: e.target.value
   onSubmit: (e) ->
     e.preventDefault()
-    if this.state.tier.isNaN
+    if this.state.tier.isNaN || !this.state.tier
       return
-    if 0 <= this.state.tier < this.state.list.length
+    if this.state.tier < this.state.list.length && this.state.tier >= 0
       nextList = this.state.list
       nextList[this.state.tier].push this.state.civ
     else
       nextList = this.state.list
       nextList.push [this.state.civ]
-    console.log nextList
-    nextTier = ''
-    nextCiv = ''
     this.setState(
       list: nextList
-      tier: nextTier
-      civ: nextCiv
       )
   createCiv: (tier, index) ->
     li
@@ -41,9 +36,11 @@ TierListComponent = createClass
     a = []
     i = 0
     while i < this.state.list[index].length
-      a.push ul null, this.createCiv this.state.list[index], i
+      a.push this.createCiv this.state.list[index], i
       i++
-    return a
+    return li
+      key: index
+      ul null, a
   createList: ->
     a = []
     i = 0
@@ -51,6 +48,23 @@ TierListComponent = createClass
       a.push this.createTier i
       i++
     return a
+  onGenerate: (e) ->
+    nextRoster = []
+    i = 0
+    tier = []
+    while i < this.state.list.length
+      tier = this.state.list[i + Math.floor(Math.random() * 2)] || this.state.list[i]
+      nextRoster.push tier[Math.floor(Math.random() * tier.length)]
+      i+=2
+    this.setState
+      roster: nextRoster
+  createRoster: ->
+    a = []
+    i = 0
+    while i < this.state.roster.length
+      a.push this.createCiv this.state.roster, i
+      i++
+    return ul null, a
   render: ->
     return(
       div
@@ -202,8 +216,14 @@ TierListComponent = createClass
               "Submit to tier " + this.state.tier
         div
           id: "list"
-          ol null,
+          ol
+            start: "0"
             this.createList()
+        button
+          id: "Generate"
+          onClick: this.onGenerate
+          "Generate Roster"
+        this.createRoster()
     )
 
 module.exports = TierListComponent

@@ -21468,42 +21468,37 @@
 	    return {
 	      list: localStorage.getItem('civroster') || [],
 	      tier: '0',
-	      civ: 'America'
+	      civ: 'America',
+	      roster: []
 	    };
 	  },
 	  onTierChange: function(e) {
-	    if (!e.target.value.isNaN) {
+	    if (!e.target.value.isNaN || !e.target.value) {
 	      return this.setState({
 	        tier: e.target.value
 	      });
 	    }
 	  },
 	  onCivChange: function(e) {
-	    console.log(e);
 	    return this.setState({
-	      civ: e.target.selected
+	      civ: e.target.value
 	    });
 	  },
 	  onSubmit: function(e) {
-	    var nextCiv, nextList, nextTier, ref1;
+	    var nextList;
 	    e.preventDefault();
-	    if (this.state.tier.isNaN) {
+	    if (this.state.tier.isNaN || !this.state.tier) {
 	      return;
 	    }
-	    if ((0 <= (ref1 = this.state.tier) && ref1 < this.state.list.length)) {
+	    if (this.state.tier < this.state.list.length && this.state.tier >= 0) {
 	      nextList = this.state.list;
 	      nextList[this.state.tier].push(this.state.civ);
 	    } else {
 	      nextList = this.state.list;
 	      nextList.push([this.state.civ]);
 	    }
-	    console.log(nextList);
-	    nextTier = '';
-	    nextCiv = '';
 	    return this.setState({
-	      list: nextList,
-	      tier: nextTier,
-	      civ: nextCiv
+	      list: nextList
 	    });
 	  },
 	  createCiv: function(tier, index) {
@@ -21516,10 +21511,12 @@
 	    a = [];
 	    i = 0;
 	    while (i < this.state.list[index].length) {
-	      a.push(ul(null, this.createCiv(this.state.list[index], i)));
+	      a.push(this.createCiv(this.state.list[index], i));
 	      i++;
 	    }
-	    return a;
+	    return li({
+	      key: index
+	    }, ul(null, a));
 	  },
 	  createList: function() {
 	    var a, i;
@@ -21530,6 +21527,30 @@
 	      i++;
 	    }
 	    return a;
+	  },
+	  onGenerate: function(e) {
+	    var i, nextRoster, tier;
+	    nextRoster = [];
+	    i = 0;
+	    tier = [];
+	    while (i < this.state.list.length) {
+	      tier = this.state.list[i + Math.floor(Math.random() * 2)] || this.state.list[i];
+	      nextRoster.push(tier[Math.floor(Math.random() * tier.length)]);
+	      i += 2;
+	    }
+	    return this.setState({
+	      roster: nextRoster
+	    });
+	  },
+	  createRoster: function() {
+	    var a, i;
+	    a = [];
+	    i = 0;
+	    while (i < this.state.roster.length) {
+	      a.push(this.createCiv(this.state.roster, i));
+	      i++;
+	    }
+	    return ul(null, a);
 	  },
 	  render: function() {
 	    return div({
@@ -21637,7 +21658,12 @@
 	      type: "submit"
 	    }, "Submit to tier " + this.state.tier))), div({
 	      id: "list"
-	    }, ol(null, this.createList())));
+	    }, ol({
+	      start: "0"
+	    }, this.createList())), button({
+	      id: "Generate",
+	      onClick: this.onGenerate
+	    }, "Generate Roster"), this.createRoster());
 	  }
 	});
 
