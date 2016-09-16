@@ -21455,17 +21455,19 @@
 /* 173 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var DOM, TierListComponent, button, createClass, createElement, div, form, input, li, ol, option, ref, render, select, ul;
+	var DOM, TierListComponent, button, copy, createClass, createElement, createFactory, div, form, input, li, ol, option, ref, render, select, ul;
 
-	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, DOM = ref.DOM;
+	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
 
 	render = __webpack_require__(34).render;
 
 	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, ul = DOM.ul, option = DOM.option, select = DOM.select;
 
+	copy = createFactory(__webpack_require__(174));
+
 	TierListComponent = createClass({
 	  onSave: function() {
-	    return localStorage.setItem('civroster', this.state.list);
+	    return localStorage.setItem('civroster', JSON.stringify(this.state.list));
 	  },
 	  onClear: function() {
 	    return localStorage.setItem('civroster', []);
@@ -21475,8 +21477,20 @@
 	      list: JSON.parse(localStorage.getItem('civroster')) || [],
 	      tier: '0',
 	      civ: 'America',
-	      roster: []
+	      roster: [],
+	      paste: ''
 	    };
+	  },
+	  onPasteChange: function(e) {
+	    return this.setState({
+	      paste: e.target.value
+	    });
+	  },
+	  onPasteSubmit: function(e) {
+	    e.preventDefault();
+	    return this.setState({
+	      list: JSON.parse(this.state.paste)
+	    });
 	  },
 	  onTierChange: function(e) {
 	    if (!e.target.value.isNaN || !e.target.value) {
@@ -21537,10 +21551,10 @@
 	  onGenerate: function(e) {
 	    var i, nextRoster, tier;
 	    nextRoster = [];
-	    i = 0;
+	    i = 1;
 	    tier = [];
 	    while (i < this.state.list.length) {
-	      tier = this.state.list[i + Math.floor(Math.random() * 2)] || this.state.list[i];
+	      tier = this.state.list[i].concat(this.state.list[i + 1]);
 	      nextRoster.push(tier[Math.floor(Math.random() * tier.length)]);
 	      i += 2;
 	    }
@@ -21672,7 +21686,19 @@
 	    }, "Save tier list to local storage"), button({
 	      id: "clear",
 	      onClick: this.onClear
-	    }, "Remove tier list from local storage"), button({
+	    }, "Remove tier list from local storage"), copy({
+	      text: JSON.stringify(this.state.list)
+	    }, button(null, "Copy to clipboard")), div({
+	      id: "paste-form"
+	    }, form({
+	      onSubmit: this.onPasteSubmit
+	    }, input({
+	      type: "text",
+	      value: this.state.paste,
+	      onChange: this.onPasteChange
+	    }), button({
+	      type: "submit"
+	    }, "Submit tier list (Use JSON)"))), button({
 	      id: "generate",
 	      onClick: this.onGenerate
 	    }, "Generate Roster"), this.createRoster());
@@ -21680,6 +21706,224 @@
 	});
 
 	module.exports = TierListComponent;
+
+
+/***/ },
+/* 174 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(175);
+
+	var CopyToClipboard = _require.CopyToClipboard;
+
+
+	module.exports = CopyToClipboard;
+	//# sourceMappingURL=index.js.map
+
+/***/ },
+/* 175 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.CopyToClipboard = undefined;
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _copyToClipboard = __webpack_require__(176);
+
+	var _copyToClipboard2 = _interopRequireDefault(_copyToClipboard);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+	var CopyToClipboard = exports.CopyToClipboard = _react2.default.createClass({
+	  displayName: 'CopyToClipboard',
+
+	  propTypes: {
+	    text: _react2.default.PropTypes.string.isRequired,
+	    children: _react2.default.PropTypes.element.isRequired,
+	    onCopy: _react2.default.PropTypes.func,
+	    options: _react2.default.PropTypes.shape({
+	      debug: _react2.default.PropTypes.bool,
+	      message: _react2.default.PropTypes.string
+	    })
+	  },
+
+	  onClick: function onClick(event) {
+	    var _props = this.props;
+	    var text = _props.text;
+	    var onCopy = _props.onCopy;
+	    var children = _props.children;
+	    var options = _props.options;
+
+	    var elem = _react2.default.Children.only(children);
+
+	    (0, _copyToClipboard2.default)(text, options);
+	    if (onCopy) {
+	      onCopy(text);
+	    }
+
+	    // Bypass onClick if it was present
+	    if (elem && elem.props && typeof elem.props.onClick === 'function') {
+	      elem.props.onClick(event);
+	    }
+	  },
+	  render: function render() {
+	    var _props2 = this.props;
+	    var _text = _props2.text;
+	    var _onCopy = _props2.onCopy;
+	    var _options = _props2.options;
+	    var children = _props2.children;
+
+	    var props = _objectWithoutProperties(_props2, ['text', 'onCopy', 'options', 'children']);
+
+	    var elem = _react2.default.Children.only(children);
+
+	    return _react2.default.cloneElement(elem, _extends({}, props, { onClick: this.onClick }));
+	  }
+	});
+	//# sourceMappingURL=Component.js.map
+
+/***/ },
+/* 176 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var deselectCurrent = __webpack_require__(177);
+
+	var defaultMessage = 'Copy to clipboard: #{key}, Enter';
+
+	function format(message) {
+	  var copyKey = (/mac os x/i.test(navigator.userAgent) ? '⌘' : 'Ctrl') + '+C';
+	  return message.replace(/#{\s*key\s*}/g, copyKey);
+	}
+
+	function copy(text, options) {
+	  var debug, message, reselectPrevious, range, selection, mark, success = false;
+	  if (!options) { options = {}; }
+	  debug = options.debug || false;
+	  try {
+	    reselectPrevious = deselectCurrent();
+
+	    range = document.createRange();
+	    selection = document.getSelection();
+
+	    mark = document.createElement('span');
+	    mark.textContent = text;
+	    mark.setAttribute('style', [
+	      // reset user styles for span element
+	      'all: unset',
+	      // prevents scrolling to the end of the page
+	      'position: fixed',
+	      'top: 0',
+	      'clip: rect(0, 0, 0, 0)',
+	      // used to preserve spaces and line breaks
+	      'white-space: pre',
+	      // do not inherit user-select (it may be `none`)
+	      '-webkit-user-select: text',
+	      '-moz-user-select: text',
+	      '-ms-user-select: text',
+	      'user-select: text',
+	    ].join(';'));
+
+	    document.body.appendChild(mark);
+
+	    range.selectNode(mark);
+	    selection.addRange(range);
+
+	    var successful = document.execCommand('copy');
+	    if (!successful) {
+	      throw new Error('copy command was unsuccessful');
+	    }
+	    success = true;
+	  } catch (err) {
+	    debug && console.error('unable to copy using execCommand: ', err);
+	    debug && console.warn('trying IE specific stuff');
+	    try {
+	      window.clipboardData.setData('text', text);
+	      success = true;
+	    } catch (err) {
+	      debug && console.error('unable to copy using clipboardData: ', err);
+	      debug && console.error('falling back to prompt');
+	      message = format('message' in options ? options.message : defaultMessage);
+	      window.prompt(message, text);
+	    }
+	  } finally {
+	    if (selection) {
+	      if (typeof selection.removeRange == 'function') {
+	        selection.removeRange(range);
+	      } else {
+	        selection.removeAllRanges();
+	      }
+	    }
+
+	    if (mark) {
+	      document.body.removeChild(mark);
+	    }
+	    reselectPrevious();
+	  }
+
+	  return success;
+	}
+
+	module.exports = copy;
+
+
+/***/ },
+/* 177 */
+/***/ function(module, exports) {
+
+	
+	module.exports = function () {
+	  var selection = document.getSelection();
+	  if (!selection.rangeCount) {
+	    return function () {};
+	  }
+	  var active = document.activeElement;
+
+	  var ranges = [];
+	  for (var i = 0; i < selection.rangeCount; i++) {
+	    ranges.push(selection.getRangeAt(i));
+	  }
+
+	  switch (active.tagName.toUpperCase()) { // .toUpperCase handles XHTML
+	    case 'INPUT':
+	    case 'TEXTAREA':
+	      active.blur();
+	      break;
+
+	    default:
+	      active = null;
+	      break;
+	  }
+
+	  selection.removeAllRanges();
+	  return function () {
+	    selection.type === 'Caret' &&
+	    selection.removeAllRanges();
+
+	    if (!selection.rangeCount) {
+	      ranges.forEach(function(range) {
+	        selection.addRange(range);
+	      });
+	    }
+
+	    active &&
+	    active.focus();
+	  };
+	};
 
 
 /***/ }
