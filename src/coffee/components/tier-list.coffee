@@ -4,7 +4,7 @@
 
 TierListComponent = createClass
   onSave: ->
-    localStorage.setItem 'civroster', this.state.list
+    localStorage.setItem 'civroster', JSON.stringify this.state.list
   onClear: ->
     localStorage.setItem 'civroster', []
   getInitialState: ->

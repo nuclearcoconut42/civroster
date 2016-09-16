@@ -21465,7 +21465,7 @@
 
 	TierListComponent = createClass({
 	  onSave: function() {
-	    return localStorage.setItem('civroster', this.state.list);
+	    return localStorage.setItem('civroster', JSON.stringify(this.state.list));
 	  },
 	  onClear: function() {
 	    return localStorage.setItem('civroster', []);
