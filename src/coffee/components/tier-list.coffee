@@ -1,6 +1,7 @@
-{createElement, createClass, DOM} = require 'react'
+{createElement, createClass, createFactory, DOM} = require 'react'
 {render} = require 'react-dom'
 {div, form, input, button, li, ol, ul, option, select} = DOM
+copy = createFactory require 'react-copy-to-clipboard'
 
 TierListComponent = createClass
   onSave: ->
@@ -12,6 +13,14 @@ TierListComponent = createClass
     tier: '0'
     civ: 'America'
     roster: []
+    paste: ''
+  onPasteChange: (e) ->
+    this.setState
+      paste: e.target.value
+  onPasteSubmit: (e) ->
+    e.preventDefault()
+    this.setState
+      list: JSON.parse(this.state.paste)
   onTierChange: (e) ->
     if !e.target.value.isNaN || !e.target.value
       this.setState
@@ -54,10 +63,10 @@ TierListComponent = createClass
     return a
   onGenerate: (e) ->
     nextRoster = []
-    i = 0
+    i = 1
     tier = []
     while i < this.state.list.length
-      tier = this.state.list[i + Math.floor(Math.random() * 2)] || this.state.list[i]
+      tier = this.state.list[i].concat this.state.list[i+1]
       nextRoster.push tier[Math.floor(Math.random() * tier.length)]
       i+=2
     this.setState
@@ -231,6 +240,21 @@ TierListComponent = createClass
           id: "clear"
           onClick: this.onClear
           "Remove tier list from local storage"
+        copy
+          text: JSON.stringify this.state.list
+          button null,
+            "Copy to clipboard"
+        div
+          id: "paste-form"
+          form
+            onSubmit: this.onPasteSubmit
+            input
+              type: "text"
+              value: this.state.paste
+              onChange: this.onPasteChange
+            button
+              type: "submit"
+              "Submit tier list (Use JSON)" 
         button
           id: "generate"
           onClick: this.onGenerate
