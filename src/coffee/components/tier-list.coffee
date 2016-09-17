@@ -67,10 +67,11 @@ TierListComponent = createClass
     return a
   onGenerate: (e) ->
     nextRoster = []
-    i = 1
+    i = 0
     tier = []
     while i < this.state.list.length
-      tier = this.state.list[i].concat this.state.list[i+1]
+      if this.state.list[i+1]
+        tier = this.state.list[i].concat this.state.list[i+1]
       nextRoster.push tier[Math.floor(Math.random() * tier.length)]
       i+=2
     this.setState
