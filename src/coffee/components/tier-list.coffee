@@ -8,8 +8,12 @@ TierListComponent = createClass
     localStorage.setItem 'civroster', JSON.stringify this.state.list
   onClear: ->
     localStorage.setItem 'civroster', []
+  queryLocalStorage: ->
+    if localStorage.getItem 'civroster'
+      return JSON.parse localStorage.getItem 'civroster'
+    return []
   getInitialState: ->
-    list: JSON.parse(localStorage.getItem('civroster')) || []
+    list: this.queryLocalStorage()
     tier: '0'
     civ: 'America'
     roster: []
@@ -254,7 +258,7 @@ TierListComponent = createClass
               onChange: this.onPasteChange
             button
               type: "submit"
-              "Submit tier list (Use JSON)" 
+              "Submit tier list (Use JSON)"
         button
           id: "generate"
           onClick: this.onGenerate
