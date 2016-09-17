@@ -1,7 +1,7 @@
 {createElement, createClass, createFactory, DOM} = require 'react'
 {render} = require 'react-dom'
 {div, form, input, button, li, ol, ul, option, select} = DOM
-copy = createFactory require 'react-copy-to-clipboard'
+copy = createFactory require 'copy-to-clipboard'
 
 TierListComponent = createClass
   onSave: ->
@@ -254,7 +254,7 @@ TierListComponent = createClass
               onChange: this.onPasteChange
             button
               type: "submit"
-              "Submit tier list (Use JSON)" 
+              "Submit tier list (Use JSON)"
         button
           id: "generate"
           onClick: this.onGenerate
