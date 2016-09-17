@@ -21472,9 +21472,15 @@
 	  onClear: function() {
 	    return localStorage.setItem('civroster', []);
 	  },
+	  queryLocalStorage: function() {
+	    if (localStorage.getItem('civroster')) {
+	      return JSON.parse(localStorage.getItem('civroster'));
+	    }
+	    return [];
+	  },
 	  getInitialState: function() {
 	    return {
-	      list: JSON.parse(localStorage.getItem('civroster')) || [],
+	      list: this.queryLocalStorage(),
 	      tier: '0',
 	      civ: 'America',
 	      roster: [],

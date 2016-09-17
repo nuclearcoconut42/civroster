@@ -8,8 +8,12 @@ TierListComponent = createClass
     localStorage.setItem 'civroster', JSON.stringify this.state.list
   onClear: ->
     localStorage.setItem 'civroster', []
+  queryLocalStorage: ->
+    if localStorage.getItem 'civroster'
+      return JSON.parse localStorage.getItem 'civroster'
+    return []
   getInitialState: ->
-    list: JSON.parse(localStorage.getItem('civroster')) || []
+    list: this.queryLocalStorage()
     tier: '0'
     civ: 'America'
     roster: []
