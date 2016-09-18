@@ -42,9 +42,8 @@ TierListComponent = createClass
     else
       nextList = this.state.list
       nextList.push [this.state.civ]
-    this.setState(
+    this.setState
       list: nextList
-      )
   createCiv: (tier, index) ->
     li
       key: index
@@ -66,23 +65,43 @@ TierListComponent = createClass
       i++
     return a
   onGenerate: (e) ->
+    console.log this.state.list
+    currentRoster = this.state.roster
     nextRoster = []
     i = 0
-    tier = []
+    picks = []
     while i < this.state.list.length
       if this.state.list[i+1]
-        tier = this.state.list[i].concat this.state.list[i+1]
-      nextRoster.push tier[Math.floor(Math.random() * tier.length)]
+        picks = this.state.list[i].concat this.state.list[i+1]
+      else
+        console.log 'odd'
+        picks = this.state.list[i]
+      for player in this.state.roster
+        for civ in player
+          picks =  picks.splice picks.indexOf(civ), 1
+      console.log picks
+      pick = picks[Math.floor(Math.random() * picks.length)]
+      if pick
+        nextRoster.push pick
       i+=2
-    this.setState
-      roster: nextRoster
+    if nextRoster[0]
+      currentRoster.push nextRoster
+      this.setState
+        roster: currentRoster
   createRoster: ->
     a = []
     i = 0
     while i < this.state.roster.length
-      a.push this.createCiv this.state.roster, i
+      b = []
+      j = 0
+      while j < this.state.roster[i].length
+        b.push this.createCiv this.state.roster[i], j
+        j++
+      a.push li
+        key: i
+        ul null, b
       i++
-    return ul null, a
+    return ol null, a
   render: ->
     return(
       div

@@ -50,9 +50,9 @@
 
 	render = __webpack_require__(34).render;
 
-	__webpack_require__(172);
+	__webpack_require__(178);
 
-	root = __webpack_require__(176);
+	root = __webpack_require__(172);
 
 	render(root, document.getElementById('app'));
 
@@ -21432,13 +21432,549 @@
 /* 172 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var DOM, RootComponent, TierListComponent, createClass, createElement, createFactory, div, p, ref, render;
+
+	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
+
+	render = __webpack_require__(34).render;
+
+	div = DOM.div, p = DOM.p;
+
+	TierListComponent = createFactory(__webpack_require__(173));
+
+	RootComponent = createClass({
+	  render: function() {
+	    return div({
+	      id: "root"
+	    }, TierListComponent(null));
+	  }
+	});
+
+	module.exports = createElement(RootComponent);
+
+
+/***/ },
+/* 173 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var DOM, TierListComponent, button, copy, createClass, createElement, createFactory, div, form, input, li, ol, option, ref, render, select, ul;
+
+	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
+
+	render = __webpack_require__(34).render;
+
+	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, ul = DOM.ul, option = DOM.option, select = DOM.select;
+
+	copy = createFactory(__webpack_require__(174));
+
+	TierListComponent = createClass({
+	  onSave: function() {
+	    return localStorage.setItem('civroster', JSON.stringify(this.state.list));
+	  },
+	  onClear: function() {
+	    return localStorage.setItem('civroster', []);
+	  },
+	  queryLocalStorage: function() {
+	    if (localStorage.getItem('civroster')) {
+	      return JSON.parse(localStorage.getItem('civroster'));
+	    }
+	    return [];
+	  },
+	  getInitialState: function() {
+	    return {
+	      list: this.queryLocalStorage(),
+	      tier: '0',
+	      civ: 'America',
+	      roster: [],
+	      paste: ''
+	    };
+	  },
+	  onPasteChange: function(e) {
+	    return this.setState({
+	      paste: e.target.value
+	    });
+	  },
+	  onPasteSubmit: function(e) {
+	    e.preventDefault();
+	    return this.setState({
+	      list: JSON.parse(this.state.paste)
+	    });
+	  },
+	  onTierChange: function(e) {
+	    if (!e.target.value.isNaN || !e.target.value) {
+	      return this.setState({
+	        tier: e.target.value
+	      });
+	    }
+	  },
+	  onCivChange: function(e) {
+	    return this.setState({
+	      civ: e.target.value
+	    });
+	  },
+	  onSubmit: function(e) {
+	    var nextList;
+	    e.preventDefault();
+	    if (this.state.tier.isNaN || !this.state.tier) {
+	      return;
+	    }
+	    if (this.state.tier < this.state.list.length && this.state.tier >= 0) {
+	      nextList = this.state.list;
+	      nextList[this.state.tier].push(this.state.civ);
+	    } else {
+	      nextList = this.state.list;
+	      nextList.push([this.state.civ]);
+	    }
+	    return this.setState({
+	      list: nextList
+	    });
+	  },
+	  createCiv: function(tier, index) {
+	    return li({
+	      key: index
+	    }, tier[index]);
+	  },
+	  createTier: function(index) {
+	    var a, i;
+	    a = [];
+	    i = 0;
+	    while (i < this.state.list[index].length) {
+	      a.push(this.createCiv(this.state.list[index], i));
+	      i++;
+	    }
+	    return li({
+	      key: index
+	    }, ul(null, a));
+	  },
+	  createList: function() {
+	    var a, i;
+	    a = [];
+	    i = 0;
+	    while (i < this.state.list.length) {
+	      a.push(this.createTier(i));
+	      i++;
+	    }
+	    return a;
+	  },
+	  onGenerate: function(e) {
+	    var civ, currentRoster, i, k, l, len, len1, nextRoster, pick, picks, player, ref1;
+	    console.log(this.state.list);
+	    currentRoster = this.state.roster;
+	    nextRoster = [];
+	    i = 0;
+	    picks = [];
+	    while (i < this.state.list.length) {
+	      if (this.state.list[i + 1]) {
+	        picks = this.state.list[i].concat(this.state.list[i + 1]);
+	      } else {
+	        console.log('odd');
+	        picks = this.state.list[i];
+	      }
+	      ref1 = this.state.roster;
+	      for (k = 0, len = ref1.length; k < len; k++) {
+	        player = ref1[k];
+	        for (l = 0, len1 = player.length; l < len1; l++) {
+	          civ = player[l];
+	          picks = picks.splice(picks.indexOf(civ), 1);
+	        }
+	      }
+	      console.log(picks);
+	      pick = picks[Math.floor(Math.random() * picks.length)];
+	      if (pick) {
+	        nextRoster.push(pick);
+	      }
+	      i += 2;
+	    }
+	    if (nextRoster[0]) {
+	      currentRoster.push(nextRoster);
+	      return this.setState({
+	        roster: currentRoster
+	      });
+	    }
+	  },
+	  createRoster: function() {
+	    var a, b, i, j;
+	    a = [];
+	    i = 0;
+	    while (i < this.state.roster.length) {
+	      b = [];
+	      j = 0;
+	      while (j < this.state.roster[i].length) {
+	        b.push(this.createCiv(this.state.roster[i], j));
+	        j++;
+	      }
+	      a.push(li({
+	        key: i
+	      }, ul(null, b)));
+	      i++;
+	    }
+	    return ol(null, a);
+	  },
+	  render: function() {
+	    return div({
+	      id: "tier-list"
+	    }, div({
+	      id: "form"
+	    }, form({
+	      onSubmit: this.onSubmit
+	    }, input({
+	      id: "tier-input",
+	      type: "number",
+	      onChange: this.onTierChange,
+	      value: this.state.tier
+	    }), select({
+	      name: "civ",
+	      onChange: this.onCivChange,
+	      value: this.state.civ
+	    }, option({
+	      value: "America"
+	    }, "America"), option({
+	      value: "Arabia"
+	    }, "Arabia"), option({
+	      value: "Assyria"
+	    }, "Assyria"), option({
+	      value: "Austria"
+	    }, "Austria"), option({
+	      value: "Aztecs"
+	    }, "Aztecs"), option({
+	      value: "Babylon"
+	    }, "Babylon"), option({
+	      value: "Brazil"
+	    }, "Brazil"), option({
+	      value: "Byzantium"
+	    }, "Byzantium"), option({
+	      value: "Carthage"
+	    }, "Carthage"), option({
+	      value: "Celts"
+	    }, "Celts"), option({
+	      value: "China"
+	    }, "China"), option({
+	      value: "Denmark"
+	    }, "Denmark"), option({
+	      value: "Egypt"
+	    }, "Egypt"), option({
+	      value: "England"
+	    }, "England"), option({
+	      value: "Ethiopia"
+	    }, "Ethiopia"), option({
+	      value: "France"
+	    }, "France"), option({
+	      value: "Germany"
+	    }, "Germany"), option({
+	      value: "Greece"
+	    }, "Greece"), option({
+	      value: "Huns"
+	    }, "Huns"), option({
+	      value: "Inca"
+	    }, "Inca"), option({
+	      value: "India"
+	    }, "India"), option({
+	      value: "Indonesia"
+	    }, "Indonesia"), option({
+	      value: "Iriquois"
+	    }, "Iriquois"), option({
+	      value: "Japan"
+	    }, "Japan"), option({
+	      value: "Korea"
+	    }, "Korea"), option({
+	      value: "Maya"
+	    }, "Maya"), option({
+	      value: "Mongolia"
+	    }, "Mongolia"), option({
+	      value: "Morocco"
+	    }, "Morocco"), option({
+	      value: "Netherlands"
+	    }, "Netherlands"), option({
+	      value: "Ottomans"
+	    }, "Ottomans"), option({
+	      value: "Persia"
+	    }, "Persia"), option({
+	      value: "Poland"
+	    }, "Poland"), option({
+	      value: "Polynesia"
+	    }, "Polynesia"), option({
+	      value: "Portugal"
+	    }, "Portugal"), option({
+	      value: "Rome"
+	    }, "Rome"), option({
+	      value: "Russia"
+	    }, "Russia"), option({
+	      value: "Shoshone"
+	    }, "Shoshone"), option({
+	      value: "Siam"
+	    }, "Siam"), option({
+	      value: "Songhai"
+	    }, "Songhai"), option({
+	      value: "Spain"
+	    }, "Spain"), option({
+	      value: "Sweden"
+	    }, "Sweden"), option({
+	      value: "Venice"
+	    }, "Venice"), option({
+	      value: "Zulus"
+	    }, "Zulus")), button({
+	      type: "submit"
+	    }, "Submit to tier " + this.state.tier))), div({
+	      id: "list"
+	    }, ol({
+	      start: "0"
+	    }, this.createList())), button({
+	      id: "save",
+	      onClick: this.onSave
+	    }, "Save tier list to local storage"), button({
+	      id: "clear",
+	      onClick: this.onClear
+	    }, "Remove tier list from local storage"), copy({
+	      text: JSON.stringify(this.state.list)
+	    }, button(null, "Copy to clipboard")), div({
+	      id: "paste-form"
+	    }, form({
+	      onSubmit: this.onPasteSubmit
+	    }, input({
+	      type: "text",
+	      value: this.state.paste,
+	      onChange: this.onPasteChange
+	    }), button({
+	      type: "submit"
+	    }, "Submit tier list (Use JSON)"))), button({
+	      id: "generate",
+	      onClick: this.onGenerate
+	    }, "Generate Roster"), this.createRoster());
+	  }
+	});
+
+	module.exports = TierListComponent;
+
+
+/***/ },
+/* 174 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(175);
+
+	var CopyToClipboard = _require.CopyToClipboard;
+
+
+	module.exports = CopyToClipboard;
+	//# sourceMappingURL=index.js.map
+
+/***/ },
+/* 175 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.CopyToClipboard = undefined;
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _copyToClipboard = __webpack_require__(176);
+
+	var _copyToClipboard2 = _interopRequireDefault(_copyToClipboard);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+	var CopyToClipboard = exports.CopyToClipboard = _react2.default.createClass({
+	  displayName: 'CopyToClipboard',
+
+	  propTypes: {
+	    text: _react2.default.PropTypes.string.isRequired,
+	    children: _react2.default.PropTypes.element.isRequired,
+	    onCopy: _react2.default.PropTypes.func,
+	    options: _react2.default.PropTypes.shape({
+	      debug: _react2.default.PropTypes.bool,
+	      message: _react2.default.PropTypes.string
+	    })
+	  },
+
+	  onClick: function onClick(event) {
+	    var _props = this.props;
+	    var text = _props.text;
+	    var onCopy = _props.onCopy;
+	    var children = _props.children;
+	    var options = _props.options;
+
+	    var elem = _react2.default.Children.only(children);
+
+	    (0, _copyToClipboard2.default)(text, options);
+	    if (onCopy) {
+	      onCopy(text);
+	    }
+
+	    // Bypass onClick if it was present
+	    if (elem && elem.props && typeof elem.props.onClick === 'function') {
+	      elem.props.onClick(event);
+	    }
+	  },
+	  render: function render() {
+	    var _props2 = this.props;
+	    var _text = _props2.text;
+	    var _onCopy = _props2.onCopy;
+	    var _options = _props2.options;
+	    var children = _props2.children;
+
+	    var props = _objectWithoutProperties(_props2, ['text', 'onCopy', 'options', 'children']);
+
+	    var elem = _react2.default.Children.only(children);
+
+	    return _react2.default.cloneElement(elem, _extends({}, props, { onClick: this.onClick }));
+	  }
+	});
+	//# sourceMappingURL=Component.js.map
+
+/***/ },
+/* 176 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var deselectCurrent = __webpack_require__(177);
+
+	var defaultMessage = 'Copy to clipboard: #{key}, Enter';
+
+	function format(message) {
+	  var copyKey = (/mac os x/i.test(navigator.userAgent) ? '⌘' : 'Ctrl') + '+C';
+	  return message.replace(/#{\s*key\s*}/g, copyKey);
+	}
+
+	function copy(text, options) {
+	  var debug, message, reselectPrevious, range, selection, mark, success = false;
+	  if (!options) { options = {}; }
+	  debug = options.debug || false;
+	  try {
+	    reselectPrevious = deselectCurrent();
+
+	    range = document.createRange();
+	    selection = document.getSelection();
+
+	    mark = document.createElement('span');
+	    mark.textContent = text;
+	    mark.setAttribute('style', [
+	      // reset user styles for span element
+	      'all: unset',
+	      // prevents scrolling to the end of the page
+	      'position: fixed',
+	      'top: 0',
+	      'clip: rect(0, 0, 0, 0)',
+	      // used to preserve spaces and line breaks
+	      'white-space: pre',
+	      // do not inherit user-select (it may be `none`)
+	      '-webkit-user-select: text',
+	      '-moz-user-select: text',
+	      '-ms-user-select: text',
+	      'user-select: text',
+	    ].join(';'));
+
+	    document.body.appendChild(mark);
+
+	    range.selectNode(mark);
+	    selection.addRange(range);
+
+	    var successful = document.execCommand('copy');
+	    if (!successful) {
+	      throw new Error('copy command was unsuccessful');
+	    }
+	    success = true;
+	  } catch (err) {
+	    debug && console.error('unable to copy using execCommand: ', err);
+	    debug && console.warn('trying IE specific stuff');
+	    try {
+	      window.clipboardData.setData('text', text);
+	      success = true;
+	    } catch (err) {
+	      debug && console.error('unable to copy using clipboardData: ', err);
+	      debug && console.error('falling back to prompt');
+	      message = format('message' in options ? options.message : defaultMessage);
+	      window.prompt(message, text);
+	    }
+	  } finally {
+	    if (selection) {
+	      if (typeof selection.removeRange == 'function') {
+	        selection.removeRange(range);
+	      } else {
+	        selection.removeAllRanges();
+	      }
+	    }
+
+	    if (mark) {
+	      document.body.removeChild(mark);
+	    }
+	    reselectPrevious();
+	  }
+
+	  return success;
+	}
+
+	module.exports = copy;
+
+
+/***/ },
+/* 177 */
+/***/ function(module, exports) {
+
+	
+	module.exports = function () {
+	  var selection = document.getSelection();
+	  if (!selection.rangeCount) {
+	    return function () {};
+	  }
+	  var active = document.activeElement;
+
+	  var ranges = [];
+	  for (var i = 0; i < selection.rangeCount; i++) {
+	    ranges.push(selection.getRangeAt(i));
+	  }
+
+	  switch (active.tagName.toUpperCase()) { // .toUpperCase handles XHTML
+	    case 'INPUT':
+	    case 'TEXTAREA':
+	      active.blur();
+	      break;
+
+	    default:
+	      active = null;
+	      break;
+	  }
+
+	  selection.removeAllRanges();
+	  return function () {
+	    selection.type === 'Caret' &&
+	    selection.removeAllRanges();
+
+	    if (!selection.rangeCount) {
+	      ranges.forEach(function(range) {
+	        selection.addRange(range);
+	      });
+	    }
+
+	    active &&
+	    active.focus();
+	  };
+	};
+
+
+/***/ },
+/* 178 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(173);
+	var content = __webpack_require__(179);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(175)(content, {});
+	var update = __webpack_require__(181)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -21455,10 +21991,10 @@
 	}
 
 /***/ },
-/* 173 */
+/* 179 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(174)();
+	exports = module.exports = __webpack_require__(180)();
 	// imports
 
 
@@ -21469,7 +22005,7 @@
 
 
 /***/ },
-/* 174 */
+/* 180 */
 /***/ function(module, exports) {
 
 	/*
@@ -21525,7 +22061,7 @@
 
 
 /***/ },
-/* 175 */
+/* 181 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -21774,512 +22310,6 @@
 		if(oldSrc)
 			URL.revokeObjectURL(oldSrc);
 	}
-
-
-/***/ },
-/* 176 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var DOM, RootComponent, TierListComponent, createClass, createElement, createFactory, div, p, ref, render;
-
-	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
-
-	render = __webpack_require__(34).render;
-
-	div = DOM.div, p = DOM.p;
-
-	TierListComponent = createFactory(__webpack_require__(177));
-
-	RootComponent = createClass({
-	  render: function() {
-	    return div({
-	      id: "root"
-	    }, TierListComponent(null));
-	  }
-	});
-
-	module.exports = createElement(RootComponent);
-
-
-/***/ },
-/* 177 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var DOM, TierListComponent, button, copy, createClass, createElement, createFactory, div, form, input, li, ol, option, ref, render, select, ul;
-
-	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
-
-	render = __webpack_require__(34).render;
-
-	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, ul = DOM.ul, option = DOM.option, select = DOM.select;
-
-	copy = createFactory(__webpack_require__(178));
-
-	TierListComponent = createClass({
-	  onSave: function() {
-	    return localStorage.setItem('civroster', JSON.stringify(this.state.list));
-	  },
-	  onClear: function() {
-	    return localStorage.setItem('civroster', []);
-	  },
-	  queryLocalStorage: function() {
-	    if (localStorage.getItem('civroster')) {
-	      return JSON.parse(localStorage.getItem('civroster'));
-	    }
-	    return [];
-	  },
-	  getInitialState: function() {
-	    return {
-	      list: this.queryLocalStorage(),
-	      tier: '0',
-	      civ: 'America',
-	      roster: [],
-	      paste: ''
-	    };
-	  },
-	  onPasteChange: function(e) {
-	    return this.setState({
-	      paste: e.target.value
-	    });
-	  },
-	  onPasteSubmit: function(e) {
-	    e.preventDefault();
-	    return this.setState({
-	      list: JSON.parse(this.state.paste)
-	    });
-	  },
-	  onTierChange: function(e) {
-	    if (!e.target.value.isNaN || !e.target.value) {
-	      return this.setState({
-	        tier: e.target.value
-	      });
-	    }
-	  },
-	  onCivChange: function(e) {
-	    return this.setState({
-	      civ: e.target.value
-	    });
-	  },
-	  onSubmit: function(e) {
-	    var nextList;
-	    e.preventDefault();
-	    if (this.state.tier.isNaN || !this.state.tier) {
-	      return;
-	    }
-	    if (this.state.tier < this.state.list.length && this.state.tier >= 0) {
-	      nextList = this.state.list;
-	      nextList[this.state.tier].push(this.state.civ);
-	    } else {
-	      nextList = this.state.list;
-	      nextList.push([this.state.civ]);
-	    }
-	    return this.setState({
-	      list: nextList
-	    });
-	  },
-	  createCiv: function(tier, index) {
-	    return li({
-	      key: index
-	    }, tier[index]);
-	  },
-	  createTier: function(index) {
-	    var a, i;
-	    a = [];
-	    i = 0;
-	    while (i < this.state.list[index].length) {
-	      a.push(this.createCiv(this.state.list[index], i));
-	      i++;
-	    }
-	    return li({
-	      key: index
-	    }, ul(null, a));
-	  },
-	  createList: function() {
-	    var a, i;
-	    a = [];
-	    i = 0;
-	    while (i < this.state.list.length) {
-	      a.push(this.createTier(i));
-	      i++;
-	    }
-	    return a;
-	  },
-	  onGenerate: function(e) {
-	    var i, nextRoster, tier;
-	    nextRoster = [];
-	    i = 1;
-	    tier = [];
-	    while (i < this.state.list.length) {
-	      tier = this.state.list[i].concat(this.state.list[i + 1]);
-	      nextRoster.push(tier[Math.floor(Math.random() * tier.length)]);
-	      i += 2;
-	    }
-	    return this.setState({
-	      roster: nextRoster
-	    });
-	  },
-	  createRoster: function() {
-	    var a, i;
-	    a = [];
-	    i = 0;
-	    while (i < this.state.roster.length) {
-	      a.push(this.createCiv(this.state.roster, i));
-	      i++;
-	    }
-	    return ul(null, a);
-	  },
-	  render: function() {
-	    return div({
-	      id: "tier-list"
-	    }, div({
-	      id: "form"
-	    }, form({
-	      onSubmit: this.onSubmit
-	    }, input({
-	      id: "tier-input",
-	      type: "number",
-	      onChange: this.onTierChange,
-	      value: this.state.tier
-	    }), select({
-	      name: "civ",
-	      onChange: this.onCivChange,
-	      value: this.state.civ
-	    }, option({
-	      value: "America"
-	    }, "America"), option({
-	      value: "Arabia"
-	    }, "Arabia"), option({
-	      value: "Assyria"
-	    }, "Assyria"), option({
-	      value: "Austria"
-	    }, "Austria"), option({
-	      value: "Aztecs"
-	    }, "Aztecs"), option({
-	      value: "Babylon"
-	    }, "Babylon"), option({
-	      value: "Brazil"
-	    }, "Brazil"), option({
-	      value: "Byzantium"
-	    }, "Byzantium"), option({
-	      value: "Carthage"
-	    }, "Carthage"), option({
-	      value: "Celts"
-	    }, "Celts"), option({
-	      value: "China"
-	    }, "China"), option({
-	      value: "Denmark"
-	    }, "Denmark"), option({
-	      value: "Egypt"
-	    }, "Egypt"), option({
-	      value: "England"
-	    }, "England"), option({
-	      value: "Ethiopia"
-	    }, "Ethiopia"), option({
-	      value: "France"
-	    }, "France"), option({
-	      value: "Germany"
-	    }, "Germany"), option({
-	      value: "Greece"
-	    }, "Greece"), option({
-	      value: "Huns"
-	    }, "Huns"), option({
-	      value: "Inca"
-	    }, "Inca"), option({
-	      value: "India"
-	    }, "India"), option({
-	      value: "Indonesia"
-	    }, "Indonesia"), option({
-	      value: "Iriquois"
-	    }, "Iriquois"), option({
-	      value: "Japan"
-	    }, "Japan"), option({
-	      value: "Korea"
-	    }, "Korea"), option({
-	      value: "Maya"
-	    }, "Maya"), option({
-	      value: "Mongolia"
-	    }, "Mongolia"), option({
-	      value: "Morocco"
-	    }, "Morocco"), option({
-	      value: "Netherlands"
-	    }, "Netherlands"), option({
-	      value: "Ottomans"
-	    }, "Ottomans"), option({
-	      value: "Persia"
-	    }, "Persia"), option({
-	      value: "Poland"
-	    }, "Poland"), option({
-	      value: "Polynesia"
-	    }, "Polynesia"), option({
-	      value: "Portugal"
-	    }, "Portugal"), option({
-	      value: "Rome"
-	    }, "Rome"), option({
-	      value: "Russia"
-	    }, "Russia"), option({
-	      value: "Shoshone"
-	    }, "Shoshone"), option({
-	      value: "Siam"
-	    }, "Siam"), option({
-	      value: "Songhai"
-	    }, "Songhai"), option({
-	      value: "Spain"
-	    }, "Spain"), option({
-	      value: "Sweden"
-	    }, "Sweden"), option({
-	      value: "Venice"
-	    }, "Venice"), option({
-	      value: "Zulus"
-	    }, "Zulus")), button({
-	      type: "submit"
-	    }, "Submit to tier " + this.state.tier))), div({
-	      id: "list"
-	    }, ol({
-	      start: "0"
-	    }, this.createList())), button({
-	      id: "save",
-	      onClick: this.onSave
-	    }, "Save tier list to local storage"), button({
-	      id: "clear",
-	      onClick: this.onClear
-	    }, "Remove tier list from local storage"), copy({
-	      text: JSON.stringify(this.state.list)
-	    }, button(null, "Copy to clipboard")), div({
-	      id: "paste-form"
-	    }, form({
-	      onSubmit: this.onPasteSubmit
-	    }, input({
-	      type: "text",
-	      value: this.state.paste,
-	      onChange: this.onPasteChange
-	    }), button({
-	      type: "submit"
-	    }, "Submit tier list (Use JSON)"))), button({
-	      id: "generate",
-	      onClick: this.onGenerate
-	    }, "Generate Roster"), this.createRoster());
-	  }
-	});
-
-	module.exports = TierListComponent;
-
-
-/***/ },
-/* 178 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(179);
-
-	var CopyToClipboard = _require.CopyToClipboard;
-
-
-	module.exports = CopyToClipboard;
-	//# sourceMappingURL=index.js.map
-
-/***/ },
-/* 179 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.CopyToClipboard = undefined;
-
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-	var _react = __webpack_require__(1);
-
-	var _react2 = _interopRequireDefault(_react);
-
-	var _copyToClipboard = __webpack_require__(180);
-
-	var _copyToClipboard2 = _interopRequireDefault(_copyToClipboard);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
-
-	var CopyToClipboard = exports.CopyToClipboard = _react2.default.createClass({
-	  displayName: 'CopyToClipboard',
-
-	  propTypes: {
-	    text: _react2.default.PropTypes.string.isRequired,
-	    children: _react2.default.PropTypes.element.isRequired,
-	    onCopy: _react2.default.PropTypes.func,
-	    options: _react2.default.PropTypes.shape({
-	      debug: _react2.default.PropTypes.bool,
-	      message: _react2.default.PropTypes.string
-	    })
-	  },
-
-	  onClick: function onClick(event) {
-	    var _props = this.props;
-	    var text = _props.text;
-	    var onCopy = _props.onCopy;
-	    var children = _props.children;
-	    var options = _props.options;
-
-	    var elem = _react2.default.Children.only(children);
-
-	    (0, _copyToClipboard2.default)(text, options);
-	    if (onCopy) {
-	      onCopy(text);
-	    }
-
-	    // Bypass onClick if it was present
-	    if (elem && elem.props && typeof elem.props.onClick === 'function') {
-	      elem.props.onClick(event);
-	    }
-	  },
-	  render: function render() {
-	    var _props2 = this.props;
-	    var _text = _props2.text;
-	    var _onCopy = _props2.onCopy;
-	    var _options = _props2.options;
-	    var children = _props2.children;
-
-	    var props = _objectWithoutProperties(_props2, ['text', 'onCopy', 'options', 'children']);
-
-	    var elem = _react2.default.Children.only(children);
-
-	    return _react2.default.cloneElement(elem, _extends({}, props, { onClick: this.onClick }));
-	  }
-	});
-	//# sourceMappingURL=Component.js.map
-
-/***/ },
-/* 180 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var deselectCurrent = __webpack_require__(181);
-
-	var defaultMessage = 'Copy to clipboard: #{key}, Enter';
-
-	function format(message) {
-	  var copyKey = (/mac os x/i.test(navigator.userAgent) ? '⌘' : 'Ctrl') + '+C';
-	  return message.replace(/#{\s*key\s*}/g, copyKey);
-	}
-
-	function copy(text, options) {
-	  var debug, message, reselectPrevious, range, selection, mark, success = false;
-	  if (!options) { options = {}; }
-	  debug = options.debug || false;
-	  try {
-	    reselectPrevious = deselectCurrent();
-
-	    range = document.createRange();
-	    selection = document.getSelection();
-
-	    mark = document.createElement('span');
-	    mark.textContent = text;
-	    mark.setAttribute('style', [
-	      // reset user styles for span element
-	      'all: unset',
-	      // prevents scrolling to the end of the page
-	      'position: fixed',
-	      'top: 0',
-	      'clip: rect(0, 0, 0, 0)',
-	      // used to preserve spaces and line breaks
-	      'white-space: pre',
-	      // do not inherit user-select (it may be `none`)
-	      '-webkit-user-select: text',
-	      '-moz-user-select: text',
-	      '-ms-user-select: text',
-	      'user-select: text',
-	    ].join(';'));
-
-	    document.body.appendChild(mark);
-
-	    range.selectNode(mark);
-	    selection.addRange(range);
-
-	    var successful = document.execCommand('copy');
-	    if (!successful) {
-	      throw new Error('copy command was unsuccessful');
-	    }
-	    success = true;
-	  } catch (err) {
-	    debug && console.error('unable to copy using execCommand: ', err);
-	    debug && console.warn('trying IE specific stuff');
-	    try {
-	      window.clipboardData.setData('text', text);
-	      success = true;
-	    } catch (err) {
-	      debug && console.error('unable to copy using clipboardData: ', err);
-	      debug && console.error('falling back to prompt');
-	      message = format('message' in options ? options.message : defaultMessage);
-	      window.prompt(message, text);
-	    }
-	  } finally {
-	    if (selection) {
-	      if (typeof selection.removeRange == 'function') {
-	        selection.removeRange(range);
-	      } else {
-	        selection.removeAllRanges();
-	      }
-	    }
-
-	    if (mark) {
-	      document.body.removeChild(mark);
-	    }
-	    reselectPrevious();
-	  }
-
-	  return success;
-	}
-
-	module.exports = copy;
-
-
-/***/ },
-/* 181 */
-/***/ function(module, exports) {
-
-	
-	module.exports = function () {
-	  var selection = document.getSelection();
-	  if (!selection.rangeCount) {
-	    return function () {};
-	  }
-	  var active = document.activeElement;
-
-	  var ranges = [];
-	  for (var i = 0; i < selection.rangeCount; i++) {
-	    ranges.push(selection.getRangeAt(i));
-	  }
-
-	  switch (active.tagName.toUpperCase()) { // .toUpperCase handles XHTML
-	    case 'INPUT':
-	    case 'TEXTAREA':
-	      active.blur();
-	      break;
-
-	    default:
-	      active = null;
-	      break;
-	  }
-
-	  selection.removeAllRanges();
-	  return function () {
-	    selection.type === 'Caret' &&
-	    selection.removeAllRanges();
-
-	    if (!selection.rangeCount) {
-	      ranges.forEach(function(range) {
-	        selection.addRange(range);
-	      });
-	    }
-
-	    active &&
-	    active.focus();
-	  };
-	};
 
 
 /***/ }
