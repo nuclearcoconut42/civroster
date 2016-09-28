@@ -54,7 +54,7 @@
 
 	root = __webpack_require__(172);
 
-	render(root, document.getElementById('app'));
+	render(createElement(root), document.getElementById('app'));
 
 
 /***/ },
@@ -21450,7 +21450,7 @@
 	  }
 	});
 
-	module.exports = createElement(RootComponent);
+	module.exports = RootComponent;
 
 
 /***/ },
@@ -21486,7 +21486,11 @@
 	      tier: '0',
 	      civ: 'America',
 	      roster: [],
-	      paste: ''
+	      paste: '',
+	      guarantee: 2,
+	      sum: 10,
+	      quantity: 3,
+	      available: null
 	    };
 	  },
 	  onPasteChange: function(e) {
@@ -21512,6 +21516,21 @@
 	      civ: e.target.value
 	    });
 	  },
+	  onGuaranteeChange: function(e) {
+	    return this.setState({
+	      guarantee: e.target.value
+	    });
+	  },
+	  onQuantityChange: function(e) {
+	    return this.setState({
+	      quantity: e.target.value
+	    });
+	  },
+	  onSumChange: function(e) {
+	    return this.setState({
+	      sum: e.target.value
+	    });
+	  },
 	  onSubmit: function(e) {
 	    var nextList;
 	    e.preventDefault();
@@ -21519,10 +21538,10 @@
 	      return;
 	    }
 	    if (this.state.tier < this.state.list.length && this.state.tier >= 0) {
-	      nextList = this.state.list;
+	      nextList = JSON.parse(JSON.stringify(this.state.list));
 	      nextList[this.state.tier].push(this.state.civ);
 	    } else {
-	      nextList = this.state.list;
+	      nextList = JSON.parse(JSON.stringify(this.state.list));
 	      nextList.push([this.state.civ]);
 	    }
 	    return this.setState({
@@ -21548,6 +21567,7 @@
 	  },
 	  createList: function() {
 	    var a, i;
+	    console.log(this.state.list);
 	    a = [];
 	    i = 0;
 	    while (i < this.state.list.length) {
@@ -21557,40 +21577,91 @@
 	    return a;
 	  },
 	  onGenerate: function(e) {
-	    var civ, currentRoster, i, k, l, len, len1, nextRoster, pick, picks, player, ref1;
-	    console.log(this.state.list);
-	    currentRoster = this.state.roster;
+	    var a, available, currentRoster, generateSet, i, k, len, nextRoster, tier, tiers;
+	    e.preventDefault();
+	    if (this.state.available !== null) {
+	      available = JSON.parse(JSON.stringify(this.state.available));
+	    } else {
+	      available = JSON.parse(JSON.stringify(this.state.list));
+	    }
+	    currentRoster = JSON.parse(JSON.stringify(this.state.roster));
 	    nextRoster = [];
-	    i = 0;
-	    picks = [];
-	    while (i < this.state.list.length) {
-	      if (this.state.list[i + 1]) {
-	        picks = this.state.list[i].concat(this.state.list[i + 1]);
-	      } else {
-	        console.log('odd');
-	        picks = this.state.list[i];
-	      }
-	      ref1 = this.state.roster;
-	      for (k = 0, len = ref1.length; k < len; k++) {
-	        player = ref1[k];
-	        for (l = 0, len1 = player.length; l < len1; l++) {
-	          civ = player[l];
-	          picks = picks.splice(picks.indexOf(civ), 1);
+	    tiers = [];
+	    generateSet = function(u, l, s, q, availableTiers, available) {
+	      var availableTier, i, k, len, picks, results, tier;
+	      console.log(available);
+	      if (!availableTiers && available !== null) {
+	        console.log('executing');
+	        availableTiers = [];
+	        for (k = 0, len = available.length; k < len; k++) {
+	          availableTier = available[k];
+	          if (availableTier !== 0) {
+	            availableTiers.push(availableTier.length);
+	          }
 	        }
 	      }
-	      console.log(picks);
-	      pick = picks[Math.floor(Math.random() * picks.length)];
-	      if (pick) {
-	        nextRoster.push(pick);
+	      console.log('availableTiers: ' + availableTiers);
+	      tier = 0;
+	      console.log('s: ' + s + ', u: ' + u + ', l: ' + l);
+	      if (q === 1 && availableTiers[s] !== 0) {
+	        tiers.push(s);
+	        return;
+	      } else {
+	        return 'retry';
 	      }
-	      i += 2;
+	      if (s > u + l) {
+	        console.log('isUpper');
+	        picks = [];
+	        i = s - u * (q - 1);
+	        while (i < u + 1) {
+	          if (availableTiers[i] !== 0) {
+	            picks.push(i);
+	          }
+	          i++;
+	        }
+	      } else {
+	        console.log('isLower');
+	        picks = [];
+	        i = l;
+	        while (i < s - l * (q - 1) + 1) {
+	          if (availableTiers[i] !== 0) {
+	            picks.push(i);
+	          }
+	          i++;
+	        }
+	      }
+	      console.log('picks: ' + picks);
+	      if (picks === []) {
+	        return 'retry';
+	      }
+	      tier = picks[Math.floor(picks.length * Math.random())];
+	      console.log('tier: ' + tier);
+	      tiers.push(tier);
+	      availableTiers[tier]--;
+	      results = [];
+	      while (generateSet(u, l, s - tier, q - 1, availableTiers, available) === 'retry' || availableTiers[tier] === 0) {
+	        tiers.pull;
+	        results.push(generateSet(u, l, s, q, availableTiers, available));
+	      }
+	      return results;
+	    };
+	    console.log(tiers);
+	    if (generateSet(this.state.list.length - 1, 0, this.state.sum, this.state.quantity, null, available) !== 'retry') {
+	      for (k = 0, len = tiers.length; k < len; k++) {
+	        tier = tiers[k];
+	        a = Math.floor(Math.random() * available[tier].length);
+	        nextRoster.push(available[tier][a]);
+	        available[tier].splice(a, 1);
+	      }
 	    }
-	    if (nextRoster[0]) {
-	      currentRoster.push(nextRoster);
-	      return this.setState({
-	        roster: currentRoster
-	      });
-	    }
+	    i = Math.floor(available[this.state.guarantee].length * Math.random());
+	    nextRoster.push(available[this.state.guarantee][i]);
+	    available.splice(i, 1);
+	    currentRoster.push(nextRoster);
+	    return this.setState({
+	      available: available,
+	      roster: currentRoster
+	    });
 	  },
 	  createRoster: function() {
 	    var a, b, i, j;
@@ -21736,10 +21807,23 @@
 	      onChange: this.onPasteChange
 	    }), button({
 	      type: "submit"
-	    }, "Submit tier list (Use JSON)"))), button({
-	      id: "generate",
-	      onClick: this.onGenerate
-	    }, "Generate Roster"), this.createRoster());
+	    }, "Submit tier list (Use JSON)"))), div({
+	      id: "generate-form"
+	    }, form({
+	      onSubmit: this.onGenerate
+	    }, input({
+	      type: "number",
+	      value: this.state.guarantee,
+	      onChange: this.onGuaranteeChange
+	    }), input({
+	      type: "number",
+	      value: this.state.quantity,
+	      onChange: this.onQuantityChange
+	    }), input({
+	      type: "number",
+	      value: this.state.sum,
+	      onChange: this.onSumChange
+	    }), button(null, "Generate Roster"))), this.createRoster());
 	  }
 	});
 

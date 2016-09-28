@@ -9,4 +9,4 @@ RootComponent = createClass
         id: "root"
         TierListComponent null
 
-module.exports = createElement(RootComponent)
+module.exports = RootComponent

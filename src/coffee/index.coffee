@@ -4,4 +4,4 @@
 require '../sass/style.sass'
 root = require './components/root'
 
-render root, document.getElementById 'app'
+render createElement(root), document.getElementById 'app'

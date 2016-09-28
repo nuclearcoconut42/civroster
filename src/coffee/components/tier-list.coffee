@@ -18,6 +18,10 @@ TierListComponent = createClass
     civ: 'America'
     roster: []
     paste: ''
+    guarantee: 2
+    sum: 10
+    quantity: 3
+    available: null
   onPasteChange: (e) ->
     this.setState
       paste: e.target.value
@@ -32,15 +36,24 @@ TierListComponent = createClass
   onCivChange: (e) ->
     this.setState
       civ: e.target.value
+  onGuaranteeChange: (e) ->
+    this.setState
+      guarantee: e.target.value
+  onQuantityChange: (e) ->
+    this.setState
+      quantity: e.target.value
+  onSumChange: (e) ->
+    this.setState
+      sum: e.target.value
   onSubmit: (e) ->
     e.preventDefault()
     if this.state.tier.isNaN || !this.state.tier
       return
     if this.state.tier < this.state.list.length && this.state.tier >= 0
-      nextList = this.state.list
+      nextList = JSON.parse JSON.stringify this.state.list
       nextList[this.state.tier].push this.state.civ
     else
-      nextList = this.state.list
+      nextList = JSON.parse JSON.stringify this.state.list
       nextList.push [this.state.civ]
     this.setState
       list: nextList
@@ -58,6 +71,7 @@ TierListComponent = createClass
       key: index
       ul null, a
   createList: ->
+    console.log this.state.list
     a = []
     i = 0
     while i < this.state.list.length
@@ -65,29 +79,69 @@ TierListComponent = createClass
       i++
     return a
   onGenerate: (e) ->
-    console.log this.state.list
-    currentRoster = this.state.roster
+    e.preventDefault()
+    if this.state.available != null
+      available = JSON.parse JSON.stringify this.state.available
+    else
+      available = JSON.parse JSON.stringify this.state.list
+    currentRoster = JSON.parse JSON.stringify this.state.roster
     nextRoster = []
-    i = 0
-    picks = []
-    while i < this.state.list.length
-      if this.state.list[i+1]
-        picks = this.state.list[i].concat this.state.list[i+1]
+    tiers = []
+    generateSet = (u, l, s, q, availableTiers, available) ->
+      console.log available
+      if !availableTiers && available != null
+        console.log 'executing'
+        availableTiers = []
+        for availableTier in available
+          if availableTier != 0
+            availableTiers.push availableTier.length
+      console.log 'availableTiers: ' + availableTiers
+      tier = 0
+      console.log 's: ' + s + ', u: ' + u + ', l: ' + l
+      if q == 1 && availableTiers[s] != 0
+        tiers.push s
+        return
       else
-        console.log 'odd'
-        picks = this.state.list[i]
-      for player in this.state.roster
-        for civ in player
-          picks =  picks.splice picks.indexOf(civ), 1
-      console.log picks
-      pick = picks[Math.floor(Math.random() * picks.length)]
-      if pick
-        nextRoster.push pick
-      i+=2
-    if nextRoster[0]
-      currentRoster.push nextRoster
-      this.setState
-        roster: currentRoster
+        return 'retry'
+      if s > u + l
+        console.log 'isUpper'
+        picks = []
+        i = s - u * (q - 1)
+        while i < u + 1
+          if availableTiers[i] != 0
+            picks.push i
+          i++
+      else
+        console.log 'isLower'
+        picks = []
+        i = l
+        while i < s - l * (q - 1) + 1
+          if availableTiers[i] != 0
+            picks.push i
+          i++
+      console.log 'picks: ' + picks
+      if picks == []
+        return 'retry'
+      tier = picks[Math.floor(picks.length *  Math.random())]
+      console.log 'tier: ' + tier 
+      tiers.push tier
+      availableTiers[tier]--
+      while generateSet(u, l, s - tier, q - 1, availableTiers, available) == 'retry' || availableTiers[tier] == 0
+        tiers.pull
+        generateSet u, l, s, q, availableTiers, available 
+    console.log tiers
+    if generateSet(this.state.list.length - 1, 0, this.state.sum, this.state.quantity, null, available) != 'retry'
+      for tier in tiers
+        a = Math.floor Math.random() * available[tier].length
+        nextRoster.push available[tier][a]
+        available[tier].splice a, 1
+    i = Math.floor available[this.state.guarantee].length * Math.random()
+    nextRoster.push available[this.state.guarantee][i]
+    available.splice i, 1
+    currentRoster.push nextRoster
+    this.setState
+      available: available
+      roster: currentRoster
   createRoster: ->
     a = []
     i = 0
@@ -279,10 +333,24 @@ TierListComponent = createClass
             button
               type: "submit"
               "Submit tier list (Use JSON)"
-        button
-          id: "generate"
-          onClick: this.onGenerate
-          "Generate Roster"
+        div
+          id: "generate-form"
+          form
+            onSubmit: this.onGenerate
+            input
+              type: "number"
+              value: this.state.guarantee
+              onChange: this.onGuaranteeChange
+            input
+              type: "number"
+              value: this.state.quantity
+              onChange: this.onQuantityChange
+            input
+              type: "number"
+              value: this.state.sum
+              onChange: this.onSumChange
+            button null,
+              "Generate Roster"
         this.createRoster()
     )
 
