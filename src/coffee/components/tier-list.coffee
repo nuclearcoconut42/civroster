@@ -18,8 +18,8 @@ TierListComponent = createClass
     civ: 'America'
     roster: []
     paste: ''
-    guarantee: 2
-    sum: 10
+    guarantee: 1
+    sum: 7
     quantity: 3
     available: null
   onPasteChange: (e) ->
@@ -71,7 +71,6 @@ TierListComponent = createClass
       key: index
       ul null, a
   createList: ->
-    console.log this.state.list
     a = []
     i = 0
     while i < this.state.list.length
@@ -87,58 +86,79 @@ TierListComponent = createClass
     currentRoster = JSON.parse JSON.stringify this.state.roster
     nextRoster = []
     tiers = []
-    generateSet = (u, l, s, q, availableTiers, available) ->
-      console.log available
-      if !availableTiers && available != null
-        console.log 'executing'
-        availableTiers = []
-        for availableTier in available
-          if availableTier != 0
-            availableTiers.push availableTier.length
-      console.log 'availableTiers: ' + availableTiers
-      tier = 0
-      console.log 's: ' + s + ', u: ' + u + ', l: ' + l
-      if q == 1 && availableTiers[s] != 0
-        tiers.push s
-        return
-      else
-        return 'retry'
-      if s > u + l
-        console.log 'isUpper'
-        picks = []
-        i = s - u * (q - 1)
-        while i < u + 1
+    generateSet = (upper, lower, sum, quantity, availableTiers) ->
+      console.log 'New call of generateSet, upper: ' + upper + ', lower: ' + lower + ', sum: ' + sum + ', quantity: ' + quantity + ', availableTiers: ' + JSON.stringify availableTiers
+      if quantity == 1
+        if availableTiers[sum] != 0
+          console.log 'Sum is available! Returning true'
+          tiers.push sum
+          return true
+        else
+          console.log 'Sum not available'
+          return false
+      picks = []
+      if sum > upper + lower
+        i = sum - upper * (quantity - 1)
+        if i < lower
+          i = lower
+        while i < upper + 1
           if availableTiers[i] != 0
+            console.log 'Adding ' + i + ' to picks'
             picks.push i
           i++
       else
-        console.log 'isLower'
-        picks = []
-        i = l
-        while i < s - l * (q - 1) + 1
+        i = lower
+        max = sum - lower * (quantity - 1)
+        if max > upper
+          max = upper
+        while i < max + 1
           if availableTiers[i] != 0
+            console.log 'Adding ' + i + ' to picks'
             picks.push i
           i++
-      console.log 'picks: ' + picks
-      if picks == []
-        return 'retry'
-      tier = picks[Math.floor(picks.length *  Math.random())]
-      console.log 'tier: ' + tier 
+      console.log 'New picks: ' + JSON.stringify picks
+      console.log 'picks.length: ' + picks.length
+      if picks.length == 0
+        console.log 'Picks not available'
+        return false
+      tier = picks[Math.floor picks.length * Math.random()]
+      console.log 'tier: ' + tier
       tiers.push tier
       availableTiers[tier]--
-      while generateSet(u, l, s - tier, q - 1, availableTiers, available) == 'retry' || availableTiers[tier] == 0
-        tiers.pull
-        generateSet u, l, s, q, availableTiers, available 
-    console.log tiers
-    if generateSet(this.state.list.length - 1, 0, this.state.sum, this.state.quantity, null, available) != 'retry'
+      console.log 'New tiers: ' + JSON.stringify tiers
+      while !generateSet upper, lower, sum - tier, quantity - 1, availableTiers
+        # reset
+        console.log 'Splicing: ' + tiers[tiers.length - 1]
+        tiers.splice tiers.length - 1, 1
+        console.log 'tiers (post-splice): ' + tiers
+        picks.splice picks.indexOf(tier), 1
+        availableTiers[tier]++
+        # check if picks is empty
+        if picks.length == 0
+          console.log 'No possible tiers left to choose!'
+          return false
+        # pick a new tier
+        tier = picks[Math.floor picks.length * Math.random()]
+        tiers.push tier
+        availableTiers[tier]--
+        console.log 'Attempting tier: ' + tier
+      return true
+    availableTiers = []
+    for availableTier in available
+      availableTiers.push availableTier.length
+    console.log 'availableTiers: ' + availableTiers
+    console.log 'available: ' + available
+    if generateSet this.state.list.length - 1, 0, this.state.sum, this.state.quantity, availableTiers
       for tier in tiers
-        a = Math.floor Math.random() * available[tier].length
-        nextRoster.push available[tier][a]
-        available[tier].splice a, 1
-    i = Math.floor available[this.state.guarantee].length * Math.random()
-    nextRoster.push available[this.state.guarantee][i]
-    available.splice i, 1
-    currentRoster.push nextRoster
+        console.log 'Adding tier: ' + tier
+        civIndex = Math.floor Math.random() * available[tier].length
+        console.log 'Adding ' + available[tier][civIndex] + ' to roster'
+        nextRoster.push available[tier][civIndex]
+        available[tier].splice civIndex, 1
+      freebie = Math.floor available[this.state.guarantee].length * Math.random()
+      nextRoster.push available[this.state.guarantee][freebie]
+      available[this.state.guarantee].splice freebie, 1
+      currentRoster.push nextRoster
     this.setState
       available: available
       roster: currentRoster

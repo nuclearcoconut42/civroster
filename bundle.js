@@ -50,9 +50,9 @@
 
 	render = __webpack_require__(34).render;
 
-	__webpack_require__(178);
+	__webpack_require__(172);
 
-	root = __webpack_require__(172);
+	root = __webpack_require__(176);
 
 	render(createElement(root), document.getElementById('app'));
 
@@ -1054,14 +1054,6 @@
 	  var source = null;
 
 	  if (config != null) {
-	    if (process.env.NODE_ENV !== 'production') {
-	      process.env.NODE_ENV !== 'production' ? warning(
-	      /* eslint-disable no-proto */
-	      config.__proto__ == null || config.__proto__ === Object.prototype,
-	      /* eslint-enable no-proto */
-	      'React.createElement(...): Expected props argument to be a plain object. ' + 'Properties defined in its prototype chain will be ignored.') : void 0;
-	    }
-
 	    if (hasValidRef(config)) {
 	      ref = config.ref;
 	    }
@@ -1162,14 +1154,6 @@
 	  var owner = element._owner;
 
 	  if (config != null) {
-	    if (process.env.NODE_ENV !== 'production') {
-	      process.env.NODE_ENV !== 'production' ? warning(
-	      /* eslint-disable no-proto */
-	      config.__proto__ == null || config.__proto__ === Object.prototype,
-	      /* eslint-enable no-proto */
-	      'React.cloneElement(...): Expected props argument to be a plain object. ' + 'Properties defined in its prototype chain will be ignored.') : void 0;
-	    }
-
 	    if (hasValidRef(config)) {
 	      // Silently steal the ref from the parent.
 	      ref = config.ref;
@@ -4203,7 +4187,7 @@
 
 	'use strict';
 
-	module.exports = '15.3.1';
+	module.exports = '15.3.2';
 
 /***/ },
 /* 33 */
@@ -5185,8 +5169,10 @@
 	function getFallbackBeforeInputChars(topLevelType, nativeEvent) {
 	  // If we are currently composing (IME) and using a fallback to do so,
 	  // try to extract the composed characters from the fallback object.
+	  // If composition event is available, we extract a string only at
+	  // compositionevent, otherwise extract it at fallback events.
 	  if (currentComposition) {
-	    if (topLevelType === topLevelTypes.topCompositionEnd || isFallbackCompositionEnd(topLevelType, nativeEvent)) {
+	    if (topLevelType === topLevelTypes.topCompositionEnd || !canUseCompositionEvent && isFallbackCompositionEnd(topLevelType, nativeEvent)) {
 	      var chars = currentComposition.getData();
 	      FallbackCompositionState.release(currentComposition);
 	      currentComposition = null;
@@ -6795,7 +6781,8 @@
 
 	    if (event.preventDefault) {
 	      event.preventDefault();
-	    } else {
+	    } else if (typeof event.returnValue !== 'unknown') {
+	      // eslint-disable-line valid-typeof
 	      event.returnValue = false;
 	    }
 	    this.isDefaultPrevented = emptyFunction.thatReturnsTrue;
@@ -7052,7 +7039,7 @@
 	var doesChangeEventBubble = false;
 	if (ExecutionEnvironment.canUseDOM) {
 	  // See `handleChange` comment below
-	  doesChangeEventBubble = isEventSupported('change') && (!('documentMode' in document) || document.documentMode > 8);
+	  doesChangeEventBubble = isEventSupported('change') && (!document.documentMode || document.documentMode > 8);
 	}
 
 	function manualDispatchChangeEvent(nativeEvent) {
@@ -7118,7 +7105,7 @@
 	  // deleting text, so we ignore its input events.
 	  // IE10+ fire input events to often, such when a placeholder
 	  // changes or when an input with a placeholder is focused.
-	  isInputEventSupported = isEventSupported('input') && (!('documentMode' in document) || document.documentMode > 11);
+	  isInputEventSupported = isEventSupported('input') && (!document.documentMode || document.documentMode > 11);
 	}
 
 	/**
@@ -8347,12 +8334,6 @@
 	    endLifeCycleTimer(debugID, timerType);
 	    emitEvent('onEndLifeCycleTimer', debugID, timerType);
 	  },
-	  onError: function (debugID) {
-	    if (currentTimerDebugID != null) {
-	      endLifeCycleTimer(currentTimerDebugID, currentTimerType);
-	    }
-	    emitEvent('onError', debugID);
-	  },
 	  onBeginProcessingChildContext: function () {
 	    emitEvent('onBeginProcessingChildContext');
 	  },
@@ -9426,6 +9407,8 @@
 	    allowFullScreen: HAS_BOOLEAN_VALUE,
 	    allowTransparency: 0,
 	    alt: 0,
+	    // specifies target context for links with `preload` type
+	    as: 0,
 	    async: HAS_BOOLEAN_VALUE,
 	    autoComplete: 0,
 	    // autoFocus is polyfilled/normalized by AutoFocusUtils
@@ -9506,6 +9489,7 @@
 	    optimum: 0,
 	    pattern: 0,
 	    placeholder: 0,
+	    playsInline: HAS_BOOLEAN_VALUE,
 	    poster: 0,
 	    preload: 0,
 	    profile: 0,
@@ -10028,9 +10012,9 @@
 	  if (node.namespaceURI === DOMNamespaces.svg && !('innerHTML' in node)) {
 	    reusableSVGContainer = reusableSVGContainer || document.createElement('div');
 	    reusableSVGContainer.innerHTML = '<svg>' + html + '</svg>';
-	    var newNodes = reusableSVGContainer.firstChild.childNodes;
-	    for (var i = 0; i < newNodes.length; i++) {
-	      node.appendChild(newNodes[i]);
+	    var svgNode = reusableSVGContainer.firstChild;
+	    while (svgNode.firstChild) {
+	      node.appendChild(svgNode.firstChild);
 	    }
 	  } else {
 	    node.innerHTML = html;
@@ -10958,9 +10942,9 @@
 	  ReactDOMOption.postMountWrapper(inst);
 	}
 
-	var setContentChildForInstrumentation = emptyFunction;
+	var setAndValidateContentChildDev = emptyFunction;
 	if (process.env.NODE_ENV !== 'production') {
-	  setContentChildForInstrumentation = function (content) {
+	  setAndValidateContentChildDev = function (content) {
 	    var hasExistingContent = this._contentDebugID != null;
 	    var debugID = this._debugID;
 	    // This ID represents the inlined child that has no backing instance:
@@ -10974,6 +10958,7 @@
 	      return;
 	    }
 
+	    validateDOMNesting(null, String(content), this, this._ancestorInfo);
 	    this._contentDebugID = contentDebugID;
 	    if (hasExistingContent) {
 	      ReactInstrumentation.debugTool.onBeforeUpdateComponent(contentDebugID, content);
@@ -11148,7 +11133,7 @@
 	  this._flags = 0;
 	  if (process.env.NODE_ENV !== 'production') {
 	    this._ancestorInfo = null;
-	    setContentChildForInstrumentation.call(this, null);
+	    setAndValidateContentChildDev.call(this, null);
 	  }
 	}
 
@@ -11248,7 +11233,7 @@
 	      if (parentInfo) {
 	        // parentInfo should always be present except for the top-level
 	        // component when server rendering
-	        validateDOMNesting(this._tag, this, parentInfo);
+	        validateDOMNesting(this._tag, null, this, parentInfo);
 	      }
 	      this._ancestorInfo = validateDOMNesting.updatedAncestorInfo(parentInfo, this._tag, this);
 	    }
@@ -11417,7 +11402,7 @@
 	        // TODO: Validate that text is allowed as a child of this node
 	        ret = escapeTextContentForBrowser(contentToUse);
 	        if (process.env.NODE_ENV !== 'production') {
-	          setContentChildForInstrumentation.call(this, contentToUse);
+	          setAndValidateContentChildDev.call(this, contentToUse);
 	        }
 	      } else if (childrenToUse != null) {
 	        var mountImages = this.mountChildren(childrenToUse, transaction, context);
@@ -11454,7 +11439,7 @@
 	      if (contentToUse != null) {
 	        // TODO: Validate that text is allowed as a child of this node
 	        if (process.env.NODE_ENV !== 'production') {
-	          setContentChildForInstrumentation.call(this, contentToUse);
+	          setAndValidateContentChildDev.call(this, contentToUse);
 	        }
 	        DOMLazyTree.queueText(lazyTree, contentToUse);
 	      } else if (childrenToUse != null) {
@@ -11686,7 +11671,7 @@
 	      if (lastContent !== nextContent) {
 	        this.updateTextContent('' + nextContent);
 	        if (process.env.NODE_ENV !== 'production') {
-	          setContentChildForInstrumentation.call(this, nextContent);
+	          setAndValidateContentChildDev.call(this, nextContent);
 	        }
 	      }
 	    } else if (nextHtml != null) {
@@ -11698,7 +11683,7 @@
 	      }
 	    } else if (nextChildren != null) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        setContentChildForInstrumentation.call(this, null);
+	        setAndValidateContentChildDev.call(this, null);
 	      }
 
 	      this.updateChildren(nextChildren, transaction, context);
@@ -11753,7 +11738,7 @@
 	    this._wrapperState = null;
 
 	    if (process.env.NODE_ENV !== 'production') {
-	      setContentChildForInstrumentation.call(this, null);
+	      setAndValidateContentChildDev.call(this, null);
 	    }
 	  },
 
@@ -13026,6 +13011,19 @@
 	  },
 
 	  /**
+	   * Protect against document.createEvent() returning null
+	   * Some popup blocker extensions appear to do this:
+	   * https://github.com/facebook/react/issues/6887
+	   */
+	  supportsEventPageXY: function () {
+	    if (!document.createEvent) {
+	      return false;
+	    }
+	    var ev = document.createEvent('MouseEvent');
+	    return ev != null && 'pageX' in ev;
+	  },
+
+	  /**
 	   * Listens to window scroll and resize events. We cache scroll values so that
 	   * application code can access them without triggering reflows.
 	   *
@@ -13038,7 +13036,7 @@
 	   */
 	  ensureScrollValueMonitoring: function () {
 	    if (hasEventPageXY === undefined) {
-	      hasEventPageXY = document.createEvent && 'pageX' in document.createEvent('MouseEvent');
+	      hasEventPageXY = ReactBrowserEventEmitter.supportsEventPageXY();
 	    }
 	    if (!hasEventPageXY && !isMonitoringScrollValue) {
 	      var refresh = ViewportMetrics.refreshScrollValues;
@@ -13324,7 +13322,7 @@
 
 	function isControlled(props) {
 	  var usesChecked = props.type === 'checkbox' || props.type === 'radio';
-	  return usesChecked ? props.checked !== undefined : props.value !== undefined;
+	  return usesChecked ? props.checked != null : props.value != null;
 	}
 
 	/**
@@ -15097,34 +15095,29 @@
 	  }
 	}
 
-	function invokeComponentDidMountWithTimer() {
-	  var publicInstance = this._instance;
-	  if (this._debugID !== 0) {
-	    ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentDidMount');
-	  }
-	  publicInstance.componentDidMount();
-	  if (this._debugID !== 0) {
-	    ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentDidMount');
-	  }
-	}
-
-	function invokeComponentDidUpdateWithTimer(prevProps, prevState, prevContext) {
-	  var publicInstance = this._instance;
-	  if (this._debugID !== 0) {
-	    ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentDidUpdate');
-	  }
-	  publicInstance.componentDidUpdate(prevProps, prevState, prevContext);
-	  if (this._debugID !== 0) {
-	    ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentDidUpdate');
-	  }
-	}
-
 	function shouldConstruct(Component) {
 	  return !!(Component.prototype && Component.prototype.isReactComponent);
 	}
 
 	function isPureComponent(Component) {
 	  return !!(Component.prototype && Component.prototype.isPureReactComponent);
+	}
+
+	// Separated into a function to contain deoptimizations caused by try/finally.
+	function measureLifeCyclePerf(fn, debugID, timerType) {
+	  if (debugID === 0) {
+	    // Top-level wrappers (see ReactMount) and empty components (see
+	    // ReactDOMEmptyComponent) are invisible to hooks and devtools.
+	    // Both are implementation details that should go away in the future.
+	    return fn();
+	  }
+
+	  ReactInstrumentation.debugTool.onBeginLifeCycleTimer(debugID, timerType);
+	  try {
+	    return fn();
+	  } finally {
+	    ReactInstrumentation.debugTool.onEndLifeCycleTimer(debugID, timerType);
+	  }
 	}
 
 	/**
@@ -15218,6 +15211,8 @@
 	   * @internal
 	   */
 	  mountComponent: function (transaction, hostParent, hostContainerInfo, context) {
+	    var _this = this;
+
 	    this._context = context;
 	    this._mountOrder = nextMountID++;
 	    this._hostParent = hostParent;
@@ -15307,7 +15302,11 @@
 
 	    if (inst.componentDidMount) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        transaction.getReactMountReady().enqueue(invokeComponentDidMountWithTimer, this);
+	        transaction.getReactMountReady().enqueue(function () {
+	          measureLifeCyclePerf(function () {
+	            return inst.componentDidMount();
+	          }, _this._debugID, 'componentDidMount');
+	        });
 	      } else {
 	        transaction.getReactMountReady().enqueue(inst.componentDidMount, inst);
 	      }
@@ -15331,35 +15330,26 @@
 
 	  _constructComponentWithoutOwner: function (doConstruct, publicProps, publicContext, updateQueue) {
 	    var Component = this._currentElement.type;
-	    var instanceOrElement;
+
 	    if (doConstruct) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'ctor');
-	        }
-	      }
-	      instanceOrElement = new Component(publicProps, publicContext, updateQueue);
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'ctor');
-	        }
-	      }
-	    } else {
-	      // This can still be an instance in case of factory components
-	      // but we'll count this as time spent rendering as the more common case.
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'render');
-	        }
-	      }
-	      instanceOrElement = Component(publicProps, publicContext, updateQueue);
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'render');
-	        }
+	        return measureLifeCyclePerf(function () {
+	          return new Component(publicProps, publicContext, updateQueue);
+	        }, this._debugID, 'ctor');
+	      } else {
+	        return new Component(publicProps, publicContext, updateQueue);
 	      }
 	    }
-	    return instanceOrElement;
+
+	    // This can still be an instance in case of factory components
+	    // but we'll count this as time spent rendering as the more common case.
+	    if (process.env.NODE_ENV !== 'production') {
+	      return measureLifeCyclePerf(function () {
+	        return Component(publicProps, publicContext, updateQueue);
+	      }, this._debugID, 'render');
+	    } else {
+	      return Component(publicProps, publicContext, updateQueue);
+	    }
 	  },
 
 	  performInitialMountWithErrorHandling: function (renderedElement, hostParent, hostContainerInfo, transaction, context) {
@@ -15368,11 +15358,6 @@
 	    try {
 	      markup = this.performInitialMount(renderedElement, hostParent, hostContainerInfo, transaction, context);
 	    } catch (e) {
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onError();
-	        }
-	      }
 	      // Roll back to checkpoint, handle error (which may add items to the transaction), and take a new checkpoint
 	      transaction.rollback(checkpoint);
 	      this._instance.unstable_handleError(e);
@@ -15393,17 +15378,19 @@
 
 	  performInitialMount: function (renderedElement, hostParent, hostContainerInfo, transaction, context) {
 	    var inst = this._instance;
+
+	    var debugID = 0;
+	    if (process.env.NODE_ENV !== 'production') {
+	      debugID = this._debugID;
+	    }
+
 	    if (inst.componentWillMount) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentWillMount');
-	        }
-	      }
-	      inst.componentWillMount();
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentWillMount');
-	        }
+	        measureLifeCyclePerf(function () {
+	          return inst.componentWillMount();
+	        }, debugID, 'componentWillMount');
+	      } else {
+	        inst.componentWillMount();
 	      }
 	      // When mounting, calls to `setState` by `componentWillMount` will set
 	      // `this._pendingStateQueue` without triggering a re-render.
@@ -15423,15 +15410,12 @@
 	    );
 	    this._renderedComponent = child;
 
-	    var selfDebugID = 0;
-	    if (process.env.NODE_ENV !== 'production') {
-	      selfDebugID = this._debugID;
-	    }
-	    var markup = ReactReconciler.mountComponent(child, transaction, hostParent, hostContainerInfo, this._processChildContext(context), selfDebugID);
+	    var markup = ReactReconciler.mountComponent(child, transaction, hostParent, hostContainerInfo, this._processChildContext(context), debugID);
 
 	    if (process.env.NODE_ENV !== 'production') {
-	      if (this._debugID !== 0) {
-	        ReactInstrumentation.debugTool.onSetChildren(this._debugID, child._debugID !== 0 ? [child._debugID] : []);
+	      if (debugID !== 0) {
+	        var childDebugIDs = child._debugID !== 0 ? [child._debugID] : [];
+	        ReactInstrumentation.debugTool.onSetChildren(debugID, childDebugIDs);
 	      }
 	    }
 
@@ -15452,24 +15436,22 @@
 	    if (!this._renderedComponent) {
 	      return;
 	    }
+
 	    var inst = this._instance;
 
 	    if (inst.componentWillUnmount && !inst._calledComponentWillUnmount) {
 	      inst._calledComponentWillUnmount = true;
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentWillUnmount');
-	        }
-	      }
+
 	      if (safely) {
 	        var name = this.getName() + '.componentWillUnmount()';
 	        ReactErrorUtils.invokeGuardedCallback(name, inst.componentWillUnmount.bind(inst));
 	      } else {
-	        inst.componentWillUnmount();
-	      }
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentWillUnmount');
+	        if (process.env.NODE_ENV !== 'production') {
+	          measureLifeCyclePerf(function () {
+	            return inst.componentWillUnmount();
+	          }, this._debugID, 'componentWillUnmount');
+	        } else {
+	          inst.componentWillUnmount();
 	        }
 	      }
 	    }
@@ -15556,13 +15538,21 @@
 	  _processChildContext: function (currentContext) {
 	    var Component = this._currentElement.type;
 	    var inst = this._instance;
-	    if (process.env.NODE_ENV !== 'production') {
-	      ReactInstrumentation.debugTool.onBeginProcessingChildContext();
+	    var childContext;
+
+	    if (inst.getChildContext) {
+	      if (process.env.NODE_ENV !== 'production') {
+	        ReactInstrumentation.debugTool.onBeginProcessingChildContext();
+	        try {
+	          childContext = inst.getChildContext();
+	        } finally {
+	          ReactInstrumentation.debugTool.onEndProcessingChildContext();
+	        }
+	      } else {
+	        childContext = inst.getChildContext();
+	      }
 	    }
-	    var childContext = inst.getChildContext && inst.getChildContext();
-	    if (process.env.NODE_ENV !== 'production') {
-	      ReactInstrumentation.debugTool.onEndProcessingChildContext();
-	    }
+
 	    if (childContext) {
 	      !(typeof Component.childContextTypes === 'object') ? process.env.NODE_ENV !== 'production' ? invariant(false, '%s.getChildContext(): childContextTypes must be defined in order to use getChildContext().', this.getName() || 'ReactCompositeComponent') : _prodInvariant('107', this.getName() || 'ReactCompositeComponent') : void 0;
 	      if (process.env.NODE_ENV !== 'production') {
@@ -15657,15 +15647,11 @@
 	    // immediately reconciled instead of waiting for the next batch.
 	    if (willReceive && inst.componentWillReceiveProps) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentWillReceiveProps');
-	        }
-	      }
-	      inst.componentWillReceiveProps(nextProps, nextContext);
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentWillReceiveProps');
-	        }
+	        measureLifeCyclePerf(function () {
+	          return inst.componentWillReceiveProps(nextProps, nextContext);
+	        }, this._debugID, 'componentWillReceiveProps');
+	      } else {
+	        inst.componentWillReceiveProps(nextProps, nextContext);
 	      }
 	    }
 
@@ -15675,15 +15661,11 @@
 	    if (!this._pendingForceUpdate) {
 	      if (inst.shouldComponentUpdate) {
 	        if (process.env.NODE_ENV !== 'production') {
-	          if (this._debugID !== 0) {
-	            ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'shouldComponentUpdate');
-	          }
-	        }
-	        shouldUpdate = inst.shouldComponentUpdate(nextProps, nextState, nextContext);
-	        if (process.env.NODE_ENV !== 'production') {
-	          if (this._debugID !== 0) {
-	            ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'shouldComponentUpdate');
-	          }
+	          shouldUpdate = measureLifeCyclePerf(function () {
+	            return inst.shouldComponentUpdate(nextProps, nextState, nextContext);
+	          }, this._debugID, 'shouldComponentUpdate');
+	        } else {
+	          shouldUpdate = inst.shouldComponentUpdate(nextProps, nextState, nextContext);
 	        }
 	      } else {
 	        if (this._compositeType === CompositeTypes.PureClass) {
@@ -15749,6 +15731,8 @@
 	   * @private
 	   */
 	  _performComponentUpdate: function (nextElement, nextProps, nextState, nextContext, transaction, unmaskedContext) {
+	    var _this2 = this;
+
 	    var inst = this._instance;
 
 	    var hasComponentDidUpdate = Boolean(inst.componentDidUpdate);
@@ -15763,15 +15747,11 @@
 
 	    if (inst.componentWillUpdate) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentWillUpdate');
-	        }
-	      }
-	      inst.componentWillUpdate(nextProps, nextState, nextContext);
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentWillUpdate');
-	        }
+	        measureLifeCyclePerf(function () {
+	          return inst.componentWillUpdate(nextProps, nextState, nextContext);
+	        }, this._debugID, 'componentWillUpdate');
+	      } else {
+	        inst.componentWillUpdate(nextProps, nextState, nextContext);
 	      }
 	    }
 
@@ -15785,7 +15765,9 @@
 
 	    if (hasComponentDidUpdate) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        transaction.getReactMountReady().enqueue(invokeComponentDidUpdateWithTimer.bind(this, prevProps, prevState, prevContext), this);
+	        transaction.getReactMountReady().enqueue(function () {
+	          measureLifeCyclePerf(inst.componentDidUpdate.bind(inst, prevProps, prevState, prevContext), _this2._debugID, 'componentDidUpdate');
+	        });
 	      } else {
 	        transaction.getReactMountReady().enqueue(inst.componentDidUpdate.bind(inst, prevProps, prevState, prevContext), inst);
 	      }
@@ -15802,6 +15784,12 @@
 	    var prevComponentInstance = this._renderedComponent;
 	    var prevRenderedElement = prevComponentInstance._currentElement;
 	    var nextRenderedElement = this._renderValidatedComponent();
+
+	    var debugID = 0;
+	    if (process.env.NODE_ENV !== 'production') {
+	      debugID = this._debugID;
+	    }
+
 	    if (shouldUpdateReactComponent(prevRenderedElement, nextRenderedElement)) {
 	      ReactReconciler.receiveComponent(prevComponentInstance, nextRenderedElement, transaction, this._processChildContext(context));
 	    } else {
@@ -15814,15 +15802,12 @@
 	      );
 	      this._renderedComponent = child;
 
-	      var selfDebugID = 0;
-	      if (process.env.NODE_ENV !== 'production') {
-	        selfDebugID = this._debugID;
-	      }
-	      var nextMarkup = ReactReconciler.mountComponent(child, transaction, this._hostParent, this._hostContainerInfo, this._processChildContext(context), selfDebugID);
+	      var nextMarkup = ReactReconciler.mountComponent(child, transaction, this._hostParent, this._hostContainerInfo, this._processChildContext(context), debugID);
 
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onSetChildren(this._debugID, child._debugID !== 0 ? [child._debugID] : []);
+	        if (debugID !== 0) {
+	          var childDebugIDs = child._debugID !== 0 ? [child._debugID] : [];
+	          ReactInstrumentation.debugTool.onSetChildren(debugID, childDebugIDs);
 	        }
 	      }
 
@@ -15844,17 +15829,14 @@
 	   */
 	  _renderValidatedComponentWithoutOwnerOrContext: function () {
 	    var inst = this._instance;
+	    var renderedComponent;
 
 	    if (process.env.NODE_ENV !== 'production') {
-	      if (this._debugID !== 0) {
-	        ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'render');
-	      }
-	    }
-	    var renderedComponent = inst.render();
-	    if (process.env.NODE_ENV !== 'production') {
-	      if (this._debugID !== 0) {
-	        ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'render');
-	      }
+	      renderedComponent = measureLifeCyclePerf(function () {
+	        return inst.render();
+	      }, this._debugID, 'render');
+	    } else {
+	      renderedComponent = inst.render();
 	    }
 
 	    if (process.env.NODE_ENV !== 'production') {
@@ -15905,7 +15887,7 @@
 	    var publicComponentInstance = component.getPublicInstance();
 	    if (process.env.NODE_ENV !== 'production') {
 	      var componentName = component && component.getName ? component.getName() : 'a component';
-	      process.env.NODE_ENV !== 'production' ? warning(publicComponentInstance != null, 'Stateless function components cannot be given refs ' + '(See ref "%s" in %s created by %s). ' + 'Attempts to access this ref will fail.', ref, componentName, this.getName()) : void 0;
+	      process.env.NODE_ENV !== 'production' ? warning(publicComponentInstance != null || component._compositeType !== CompositeTypes.StatelessFunctional, 'Stateless function components cannot be given refs ' + '(See ref "%s" in %s created by %s). ' + 'Attempts to access this ref will fail.', ref, componentName, this.getName()) : void 0;
 	    }
 	    var refs = inst.refs === emptyObject ? inst.refs = {} : inst.refs;
 	    refs[ref] = publicComponentInstance;
@@ -16042,7 +16024,8 @@
 	  if (x === y) {
 	    // Steps 1-5, 7-10
 	    // Steps 6.b-6.e: +0 != -0
-	    return x !== 0 || 1 / x === 1 / y;
+	    // Added the nonzero y check to make Flow happy, but it is redundant
+	    return x !== 0 || y !== 0 || 1 / x === 1 / y;
 	  } else {
 	    // Step 6.a: NaN == NaN
 	    return x !== x && y !== y;
@@ -17096,10 +17079,15 @@
 
 	  var didWarn = {};
 
-	  validateDOMNesting = function (childTag, childInstance, ancestorInfo) {
+	  validateDOMNesting = function (childTag, childText, childInstance, ancestorInfo) {
 	    ancestorInfo = ancestorInfo || emptyAncestorInfo;
 	    var parentInfo = ancestorInfo.current;
 	    var parentTag = parentInfo && parentInfo.tag;
+
+	    if (childText != null) {
+	      process.env.NODE_ENV !== 'production' ? warning(childTag == null, 'validateDOMNesting: when childText is passed, childTag should be null') : void 0;
+	      childTag = '#text';
+	    }
 
 	    var invalidParent = isTagValidWithParent(childTag, parentTag) ? null : parentInfo;
 	    var invalidAncestor = invalidParent ? null : findInvalidAncestorForTag(childTag, ancestorInfo);
@@ -17148,7 +17136,15 @@
 	      didWarn[warnKey] = true;
 
 	      var tagDisplayName = childTag;
-	      if (childTag !== '#text') {
+	      var whitespaceInfo = '';
+	      if (childTag === '#text') {
+	        if (/\S/.test(childText)) {
+	          tagDisplayName = 'Text nodes';
+	        } else {
+	          tagDisplayName = 'Whitespace text nodes';
+	          whitespaceInfo = ' Make sure you don\'t have any extra whitespace between tags on ' + 'each line of your source code.';
+	        }
+	      } else {
 	        tagDisplayName = '<' + childTag + '>';
 	      }
 
@@ -17157,7 +17153,7 @@
 	        if (ancestorTag === 'table' && childTag === 'tr') {
 	          info += ' Add a <tbody> to your code to match the DOM tree generated by ' + 'the browser.';
 	        }
-	        process.env.NODE_ENV !== 'production' ? warning(false, 'validateDOMNesting(...): %s cannot appear as a child of <%s>. ' + 'See %s.%s', tagDisplayName, ancestorTag, ownerInfo, info) : void 0;
+	        process.env.NODE_ENV !== 'production' ? warning(false, 'validateDOMNesting(...): %s cannot appear as a child of <%s>.%s ' + 'See %s.%s', tagDisplayName, ancestorTag, whitespaceInfo, ownerInfo, info) : void 0;
 	      } else {
 	        process.env.NODE_ENV !== 'production' ? warning(false, 'validateDOMNesting(...): %s cannot appear as a descendant of ' + '<%s>. See %s.', tagDisplayName, ancestorTag, ownerInfo) : void 0;
 	      }
@@ -17464,7 +17460,7 @@
 	      if (parentInfo) {
 	        // parentInfo should always be present except for the top-level
 	        // component when server rendering
-	        validateDOMNesting('#text', this, parentInfo);
+	        validateDOMNesting(null, this._stringText, this, parentInfo);
 	      }
 	    }
 
@@ -19057,7 +19053,7 @@
 	      bubbled: keyOf({ onSelect: null }),
 	      captured: keyOf({ onSelectCapture: null })
 	    },
-	    dependencies: [topLevelTypes.topBlur, topLevelTypes.topContextMenu, topLevelTypes.topFocus, topLevelTypes.topKeyDown, topLevelTypes.topMouseDown, topLevelTypes.topMouseUp, topLevelTypes.topSelectionChange]
+	    dependencies: [topLevelTypes.topBlur, topLevelTypes.topContextMenu, topLevelTypes.topFocus, topLevelTypes.topKeyDown, topLevelTypes.topKeyUp, topLevelTypes.topMouseDown, topLevelTypes.topMouseUp, topLevelTypes.topSelectionChange]
 	  }
 	};
 
@@ -21432,633 +21428,13 @@
 /* 172 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var DOM, RootComponent, TierListComponent, createClass, createElement, createFactory, div, p, ref, render;
-
-	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
-
-	render = __webpack_require__(34).render;
-
-	div = DOM.div, p = DOM.p;
-
-	TierListComponent = createFactory(__webpack_require__(173));
-
-	RootComponent = createClass({
-	  render: function() {
-	    return div({
-	      id: "root"
-	    }, TierListComponent(null));
-	  }
-	});
-
-	module.exports = RootComponent;
-
-
-/***/ },
-/* 173 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var DOM, TierListComponent, button, copy, createClass, createElement, createFactory, div, form, input, li, ol, option, ref, render, select, ul;
-
-	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
-
-	render = __webpack_require__(34).render;
-
-	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, ul = DOM.ul, option = DOM.option, select = DOM.select;
-
-	copy = createFactory(__webpack_require__(174));
-
-	TierListComponent = createClass({
-	  onSave: function() {
-	    return localStorage.setItem('civroster', JSON.stringify(this.state.list));
-	  },
-	  onClear: function() {
-	    return localStorage.setItem('civroster', []);
-	  },
-	  queryLocalStorage: function() {
-	    if (localStorage.getItem('civroster')) {
-	      return JSON.parse(localStorage.getItem('civroster'));
-	    }
-	    return [];
-	  },
-	  getInitialState: function() {
-	    return {
-	      list: this.queryLocalStorage(),
-	      tier: '0',
-	      civ: 'America',
-	      roster: [],
-	      paste: '',
-	      guarantee: 2,
-	      sum: 10,
-	      quantity: 3,
-	      available: null
-	    };
-	  },
-	  onPasteChange: function(e) {
-	    return this.setState({
-	      paste: e.target.value
-	    });
-	  },
-	  onPasteSubmit: function(e) {
-	    e.preventDefault();
-	    return this.setState({
-	      list: JSON.parse(this.state.paste)
-	    });
-	  },
-	  onTierChange: function(e) {
-	    if (!e.target.value.isNaN || !e.target.value) {
-	      return this.setState({
-	        tier: e.target.value
-	      });
-	    }
-	  },
-	  onCivChange: function(e) {
-	    return this.setState({
-	      civ: e.target.value
-	    });
-	  },
-	  onGuaranteeChange: function(e) {
-	    return this.setState({
-	      guarantee: e.target.value
-	    });
-	  },
-	  onQuantityChange: function(e) {
-	    return this.setState({
-	      quantity: e.target.value
-	    });
-	  },
-	  onSumChange: function(e) {
-	    return this.setState({
-	      sum: e.target.value
-	    });
-	  },
-	  onSubmit: function(e) {
-	    var nextList;
-	    e.preventDefault();
-	    if (this.state.tier.isNaN || !this.state.tier) {
-	      return;
-	    }
-	    if (this.state.tier < this.state.list.length && this.state.tier >= 0) {
-	      nextList = JSON.parse(JSON.stringify(this.state.list));
-	      nextList[this.state.tier].push(this.state.civ);
-	    } else {
-	      nextList = JSON.parse(JSON.stringify(this.state.list));
-	      nextList.push([this.state.civ]);
-	    }
-	    return this.setState({
-	      list: nextList
-	    });
-	  },
-	  createCiv: function(tier, index) {
-	    return li({
-	      key: index
-	    }, tier[index]);
-	  },
-	  createTier: function(index) {
-	    var a, i;
-	    a = [];
-	    i = 0;
-	    while (i < this.state.list[index].length) {
-	      a.push(this.createCiv(this.state.list[index], i));
-	      i++;
-	    }
-	    return li({
-	      key: index
-	    }, ul(null, a));
-	  },
-	  createList: function() {
-	    var a, i;
-	    console.log(this.state.list);
-	    a = [];
-	    i = 0;
-	    while (i < this.state.list.length) {
-	      a.push(this.createTier(i));
-	      i++;
-	    }
-	    return a;
-	  },
-	  onGenerate: function(e) {
-	    var a, available, currentRoster, generateSet, i, k, len, nextRoster, tier, tiers;
-	    e.preventDefault();
-	    if (this.state.available !== null) {
-	      available = JSON.parse(JSON.stringify(this.state.available));
-	    } else {
-	      available = JSON.parse(JSON.stringify(this.state.list));
-	    }
-	    currentRoster = JSON.parse(JSON.stringify(this.state.roster));
-	    nextRoster = [];
-	    tiers = [];
-	    generateSet = function(u, l, s, q, availableTiers, available) {
-	      var availableTier, i, k, len, picks, results, tier;
-	      console.log(available);
-	      if (!availableTiers && available !== null) {
-	        console.log('executing');
-	        availableTiers = [];
-	        for (k = 0, len = available.length; k < len; k++) {
-	          availableTier = available[k];
-	          if (availableTier !== 0) {
-	            availableTiers.push(availableTier.length);
-	          }
-	        }
-	      }
-	      console.log('availableTiers: ' + availableTiers);
-	      tier = 0;
-	      console.log('s: ' + s + ', u: ' + u + ', l: ' + l);
-	      if (q === 1 && availableTiers[s] !== 0) {
-	        tiers.push(s);
-	        return;
-	      } else {
-	        return 'retry';
-	      }
-	      if (s > u + l) {
-	        console.log('isUpper');
-	        picks = [];
-	        i = s - u * (q - 1);
-	        while (i < u + 1) {
-	          if (availableTiers[i] !== 0) {
-	            picks.push(i);
-	          }
-	          i++;
-	        }
-	      } else {
-	        console.log('isLower');
-	        picks = [];
-	        i = l;
-	        while (i < s - l * (q - 1) + 1) {
-	          if (availableTiers[i] !== 0) {
-	            picks.push(i);
-	          }
-	          i++;
-	        }
-	      }
-	      console.log('picks: ' + picks);
-	      if (picks === []) {
-	        return 'retry';
-	      }
-	      tier = picks[Math.floor(picks.length * Math.random())];
-	      console.log('tier: ' + tier);
-	      tiers.push(tier);
-	      availableTiers[tier]--;
-	      results = [];
-	      while (generateSet(u, l, s - tier, q - 1, availableTiers, available) === 'retry' || availableTiers[tier] === 0) {
-	        tiers.pull;
-	        results.push(generateSet(u, l, s, q, availableTiers, available));
-	      }
-	      return results;
-	    };
-	    console.log(tiers);
-	    if (generateSet(this.state.list.length - 1, 0, this.state.sum, this.state.quantity, null, available) !== 'retry') {
-	      for (k = 0, len = tiers.length; k < len; k++) {
-	        tier = tiers[k];
-	        a = Math.floor(Math.random() * available[tier].length);
-	        nextRoster.push(available[tier][a]);
-	        available[tier].splice(a, 1);
-	      }
-	    }
-	    i = Math.floor(available[this.state.guarantee].length * Math.random());
-	    nextRoster.push(available[this.state.guarantee][i]);
-	    available.splice(i, 1);
-	    currentRoster.push(nextRoster);
-	    return this.setState({
-	      available: available,
-	      roster: currentRoster
-	    });
-	  },
-	  createRoster: function() {
-	    var a, b, i, j;
-	    a = [];
-	    i = 0;
-	    while (i < this.state.roster.length) {
-	      b = [];
-	      j = 0;
-	      while (j < this.state.roster[i].length) {
-	        b.push(this.createCiv(this.state.roster[i], j));
-	        j++;
-	      }
-	      a.push(li({
-	        key: i
-	      }, ul(null, b)));
-	      i++;
-	    }
-	    return ol(null, a);
-	  },
-	  render: function() {
-	    return div({
-	      id: "tier-list"
-	    }, div({
-	      id: "form"
-	    }, form({
-	      onSubmit: this.onSubmit
-	    }, input({
-	      id: "tier-input",
-	      type: "number",
-	      onChange: this.onTierChange,
-	      value: this.state.tier
-	    }), select({
-	      name: "civ",
-	      onChange: this.onCivChange,
-	      value: this.state.civ
-	    }, option({
-	      value: "America"
-	    }, "America"), option({
-	      value: "Arabia"
-	    }, "Arabia"), option({
-	      value: "Assyria"
-	    }, "Assyria"), option({
-	      value: "Austria"
-	    }, "Austria"), option({
-	      value: "Aztecs"
-	    }, "Aztecs"), option({
-	      value: "Babylon"
-	    }, "Babylon"), option({
-	      value: "Brazil"
-	    }, "Brazil"), option({
-	      value: "Byzantium"
-	    }, "Byzantium"), option({
-	      value: "Carthage"
-	    }, "Carthage"), option({
-	      value: "Celts"
-	    }, "Celts"), option({
-	      value: "China"
-	    }, "China"), option({
-	      value: "Denmark"
-	    }, "Denmark"), option({
-	      value: "Egypt"
-	    }, "Egypt"), option({
-	      value: "England"
-	    }, "England"), option({
-	      value: "Ethiopia"
-	    }, "Ethiopia"), option({
-	      value: "France"
-	    }, "France"), option({
-	      value: "Germany"
-	    }, "Germany"), option({
-	      value: "Greece"
-	    }, "Greece"), option({
-	      value: "Huns"
-	    }, "Huns"), option({
-	      value: "Inca"
-	    }, "Inca"), option({
-	      value: "India"
-	    }, "India"), option({
-	      value: "Indonesia"
-	    }, "Indonesia"), option({
-	      value: "Iriquois"
-	    }, "Iriquois"), option({
-	      value: "Japan"
-	    }, "Japan"), option({
-	      value: "Korea"
-	    }, "Korea"), option({
-	      value: "Maya"
-	    }, "Maya"), option({
-	      value: "Mongolia"
-	    }, "Mongolia"), option({
-	      value: "Morocco"
-	    }, "Morocco"), option({
-	      value: "Netherlands"
-	    }, "Netherlands"), option({
-	      value: "Ottomans"
-	    }, "Ottomans"), option({
-	      value: "Persia"
-	    }, "Persia"), option({
-	      value: "Poland"
-	    }, "Poland"), option({
-	      value: "Polynesia"
-	    }, "Polynesia"), option({
-	      value: "Portugal"
-	    }, "Portugal"), option({
-	      value: "Rome"
-	    }, "Rome"), option({
-	      value: "Russia"
-	    }, "Russia"), option({
-	      value: "Shoshone"
-	    }, "Shoshone"), option({
-	      value: "Siam"
-	    }, "Siam"), option({
-	      value: "Songhai"
-	    }, "Songhai"), option({
-	      value: "Spain"
-	    }, "Spain"), option({
-	      value: "Sweden"
-	    }, "Sweden"), option({
-	      value: "Venice"
-	    }, "Venice"), option({
-	      value: "Zulus"
-	    }, "Zulus")), button({
-	      type: "submit"
-	    }, "Submit to tier " + this.state.tier))), div({
-	      id: "list"
-	    }, ol({
-	      start: "0"
-	    }, this.createList())), button({
-	      id: "save",
-	      onClick: this.onSave
-	    }, "Save tier list to local storage"), button({
-	      id: "clear",
-	      onClick: this.onClear
-	    }, "Remove tier list from local storage"), copy({
-	      text: JSON.stringify(this.state.list)
-	    }, button(null, "Copy to clipboard")), div({
-	      id: "paste-form"
-	    }, form({
-	      onSubmit: this.onPasteSubmit
-	    }, input({
-	      type: "text",
-	      value: this.state.paste,
-	      onChange: this.onPasteChange
-	    }), button({
-	      type: "submit"
-	    }, "Submit tier list (Use JSON)"))), div({
-	      id: "generate-form"
-	    }, form({
-	      onSubmit: this.onGenerate
-	    }, input({
-	      type: "number",
-	      value: this.state.guarantee,
-	      onChange: this.onGuaranteeChange
-	    }), input({
-	      type: "number",
-	      value: this.state.quantity,
-	      onChange: this.onQuantityChange
-	    }), input({
-	      type: "number",
-	      value: this.state.sum,
-	      onChange: this.onSumChange
-	    }), button(null, "Generate Roster"))), this.createRoster());
-	  }
-	});
-
-	module.exports = TierListComponent;
-
-
-/***/ },
-/* 174 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(175);
-
-	var CopyToClipboard = _require.CopyToClipboard;
-
-
-	module.exports = CopyToClipboard;
-	//# sourceMappingURL=index.js.map
-
-/***/ },
-/* 175 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.CopyToClipboard = undefined;
-
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-	var _react = __webpack_require__(1);
-
-	var _react2 = _interopRequireDefault(_react);
-
-	var _copyToClipboard = __webpack_require__(176);
-
-	var _copyToClipboard2 = _interopRequireDefault(_copyToClipboard);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
-
-	var CopyToClipboard = exports.CopyToClipboard = _react2.default.createClass({
-	  displayName: 'CopyToClipboard',
-
-	  propTypes: {
-	    text: _react2.default.PropTypes.string.isRequired,
-	    children: _react2.default.PropTypes.element.isRequired,
-	    onCopy: _react2.default.PropTypes.func,
-	    options: _react2.default.PropTypes.shape({
-	      debug: _react2.default.PropTypes.bool,
-	      message: _react2.default.PropTypes.string
-	    })
-	  },
-
-	  onClick: function onClick(event) {
-	    var _props = this.props;
-	    var text = _props.text;
-	    var onCopy = _props.onCopy;
-	    var children = _props.children;
-	    var options = _props.options;
-
-	    var elem = _react2.default.Children.only(children);
-
-	    (0, _copyToClipboard2.default)(text, options);
-	    if (onCopy) {
-	      onCopy(text);
-	    }
-
-	    // Bypass onClick if it was present
-	    if (elem && elem.props && typeof elem.props.onClick === 'function') {
-	      elem.props.onClick(event);
-	    }
-	  },
-	  render: function render() {
-	    var _props2 = this.props;
-	    var _text = _props2.text;
-	    var _onCopy = _props2.onCopy;
-	    var _options = _props2.options;
-	    var children = _props2.children;
-
-	    var props = _objectWithoutProperties(_props2, ['text', 'onCopy', 'options', 'children']);
-
-	    var elem = _react2.default.Children.only(children);
-
-	    return _react2.default.cloneElement(elem, _extends({}, props, { onClick: this.onClick }));
-	  }
-	});
-	//# sourceMappingURL=Component.js.map
-
-/***/ },
-/* 176 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var deselectCurrent = __webpack_require__(177);
-
-	var defaultMessage = 'Copy to clipboard: #{key}, Enter';
-
-	function format(message) {
-	  var copyKey = (/mac os x/i.test(navigator.userAgent) ? '⌘' : 'Ctrl') + '+C';
-	  return message.replace(/#{\s*key\s*}/g, copyKey);
-	}
-
-	function copy(text, options) {
-	  var debug, message, reselectPrevious, range, selection, mark, success = false;
-	  if (!options) { options = {}; }
-	  debug = options.debug || false;
-	  try {
-	    reselectPrevious = deselectCurrent();
-
-	    range = document.createRange();
-	    selection = document.getSelection();
-
-	    mark = document.createElement('span');
-	    mark.textContent = text;
-	    mark.setAttribute('style', [
-	      // reset user styles for span element
-	      'all: unset',
-	      // prevents scrolling to the end of the page
-	      'position: fixed',
-	      'top: 0',
-	      'clip: rect(0, 0, 0, 0)',
-	      // used to preserve spaces and line breaks
-	      'white-space: pre',
-	      // do not inherit user-select (it may be `none`)
-	      '-webkit-user-select: text',
-	      '-moz-user-select: text',
-	      '-ms-user-select: text',
-	      'user-select: text',
-	    ].join(';'));
-
-	    document.body.appendChild(mark);
-
-	    range.selectNode(mark);
-	    selection.addRange(range);
-
-	    var successful = document.execCommand('copy');
-	    if (!successful) {
-	      throw new Error('copy command was unsuccessful');
-	    }
-	    success = true;
-	  } catch (err) {
-	    debug && console.error('unable to copy using execCommand: ', err);
-	    debug && console.warn('trying IE specific stuff');
-	    try {
-	      window.clipboardData.setData('text', text);
-	      success = true;
-	    } catch (err) {
-	      debug && console.error('unable to copy using clipboardData: ', err);
-	      debug && console.error('falling back to prompt');
-	      message = format('message' in options ? options.message : defaultMessage);
-	      window.prompt(message, text);
-	    }
-	  } finally {
-	    if (selection) {
-	      if (typeof selection.removeRange == 'function') {
-	        selection.removeRange(range);
-	      } else {
-	        selection.removeAllRanges();
-	      }
-	    }
-
-	    if (mark) {
-	      document.body.removeChild(mark);
-	    }
-	    reselectPrevious();
-	  }
-
-	  return success;
-	}
-
-	module.exports = copy;
-
-
-/***/ },
-/* 177 */
-/***/ function(module, exports) {
-
-	
-	module.exports = function () {
-	  var selection = document.getSelection();
-	  if (!selection.rangeCount) {
-	    return function () {};
-	  }
-	  var active = document.activeElement;
-
-	  var ranges = [];
-	  for (var i = 0; i < selection.rangeCount; i++) {
-	    ranges.push(selection.getRangeAt(i));
-	  }
-
-	  switch (active.tagName.toUpperCase()) { // .toUpperCase handles XHTML
-	    case 'INPUT':
-	    case 'TEXTAREA':
-	      active.blur();
-	      break;
-
-	    default:
-	      active = null;
-	      break;
-	  }
-
-	  selection.removeAllRanges();
-	  return function () {
-	    selection.type === 'Caret' &&
-	    selection.removeAllRanges();
-
-	    if (!selection.rangeCount) {
-	      ranges.forEach(function(range) {
-	        selection.addRange(range);
-	      });
-	    }
-
-	    active &&
-	    active.focus();
-	  };
-	};
-
-
-/***/ },
-/* 178 */
-/***/ function(module, exports, __webpack_require__) {
-
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 
 	// load the styles
-	var content = __webpack_require__(179);
+	var content = __webpack_require__(173);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(181)(content, {});
+	var update = __webpack_require__(175)(content, {});
 	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
@@ -22075,10 +21451,10 @@
 	}
 
 /***/ },
-/* 179 */
+/* 173 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(180)();
+	exports = module.exports = __webpack_require__(174)();
 	// imports
 
 
@@ -22089,7 +21465,7 @@
 
 
 /***/ },
-/* 180 */
+/* 174 */
 /***/ function(module, exports) {
 
 	/*
@@ -22145,7 +21521,7 @@
 
 
 /***/ },
-/* 181 */
+/* 175 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -22394,6 +21770,643 @@
 		if(oldSrc)
 			URL.revokeObjectURL(oldSrc);
 	}
+
+
+/***/ },
+/* 176 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var DOM, RootComponent, TierListComponent, createClass, createElement, createFactory, div, p, ref, render;
+
+	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
+
+	render = __webpack_require__(34).render;
+
+	div = DOM.div, p = DOM.p;
+
+	TierListComponent = createFactory(__webpack_require__(177));
+
+	RootComponent = createClass({
+	  render: function() {
+	    return div({
+	      id: "root"
+	    }, TierListComponent(null));
+	  }
+	});
+
+	module.exports = RootComponent;
+
+
+/***/ },
+/* 177 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var DOM, TierListComponent, button, copy, createClass, createElement, createFactory, div, form, input, li, ol, option, ref, render, select, ul;
+
+	ref = __webpack_require__(1), createElement = ref.createElement, createClass = ref.createClass, createFactory = ref.createFactory, DOM = ref.DOM;
+
+	render = __webpack_require__(34).render;
+
+	div = DOM.div, form = DOM.form, input = DOM.input, button = DOM.button, li = DOM.li, ol = DOM.ol, ul = DOM.ul, option = DOM.option, select = DOM.select;
+
+	copy = createFactory(__webpack_require__(178));
+
+	TierListComponent = createClass({
+	  onSave: function() {
+	    return localStorage.setItem('civroster', JSON.stringify(this.state.list));
+	  },
+	  onClear: function() {
+	    return localStorage.setItem('civroster', []);
+	  },
+	  queryLocalStorage: function() {
+	    if (localStorage.getItem('civroster')) {
+	      return JSON.parse(localStorage.getItem('civroster'));
+	    }
+	    return [];
+	  },
+	  getInitialState: function() {
+	    return {
+	      list: this.queryLocalStorage(),
+	      tier: '0',
+	      civ: 'America',
+	      roster: [],
+	      paste: '',
+	      guarantee: 1,
+	      sum: 7,
+	      quantity: 3,
+	      available: null
+	    };
+	  },
+	  onPasteChange: function(e) {
+	    return this.setState({
+	      paste: e.target.value
+	    });
+	  },
+	  onPasteSubmit: function(e) {
+	    e.preventDefault();
+	    return this.setState({
+	      list: JSON.parse(this.state.paste)
+	    });
+	  },
+	  onTierChange: function(e) {
+	    if (!e.target.value.isNaN || !e.target.value) {
+	      return this.setState({
+	        tier: e.target.value
+	      });
+	    }
+	  },
+	  onCivChange: function(e) {
+	    return this.setState({
+	      civ: e.target.value
+	    });
+	  },
+	  onGuaranteeChange: function(e) {
+	    return this.setState({
+	      guarantee: e.target.value
+	    });
+	  },
+	  onQuantityChange: function(e) {
+	    return this.setState({
+	      quantity: e.target.value
+	    });
+	  },
+	  onSumChange: function(e) {
+	    return this.setState({
+	      sum: e.target.value
+	    });
+	  },
+	  onSubmit: function(e) {
+	    var nextList;
+	    e.preventDefault();
+	    if (this.state.tier.isNaN || !this.state.tier) {
+	      return;
+	    }
+	    if (this.state.tier < this.state.list.length && this.state.tier >= 0) {
+	      nextList = JSON.parse(JSON.stringify(this.state.list));
+	      nextList[this.state.tier].push(this.state.civ);
+	    } else {
+	      nextList = JSON.parse(JSON.stringify(this.state.list));
+	      nextList.push([this.state.civ]);
+	    }
+	    return this.setState({
+	      list: nextList
+	    });
+	  },
+	  createCiv: function(tier, index) {
+	    return li({
+	      key: index
+	    }, tier[index]);
+	  },
+	  createTier: function(index) {
+	    var a, i;
+	    a = [];
+	    i = 0;
+	    while (i < this.state.list[index].length) {
+	      a.push(this.createCiv(this.state.list[index], i));
+	      i++;
+	    }
+	    return li({
+	      key: index
+	    }, ul(null, a));
+	  },
+	  createList: function() {
+	    var a, i;
+	    a = [];
+	    i = 0;
+	    while (i < this.state.list.length) {
+	      a.push(this.createTier(i));
+	      i++;
+	    }
+	    return a;
+	  },
+	  onGenerate: function(e) {
+	    var available, availableTier, availableTiers, civIndex, currentRoster, freebie, generateSet, k, l, len, len1, nextRoster, tier, tiers;
+	    e.preventDefault();
+	    if (this.state.available !== null) {
+	      available = JSON.parse(JSON.stringify(this.state.available));
+	    } else {
+	      available = JSON.parse(JSON.stringify(this.state.list));
+	    }
+	    currentRoster = JSON.parse(JSON.stringify(this.state.roster));
+	    nextRoster = [];
+	    tiers = [];
+	    generateSet = function(upper, lower, sum, quantity, availableTiers) {
+	      var i, max, picks, tier;
+	      console.log('New call of generateSet, upper: ' + upper + ', lower: ' + lower + ', sum: ' + sum + ', quantity: ' + quantity + ', availableTiers: ' + JSON.stringify(availableTiers));
+	      if (quantity === 1) {
+	        if (availableTiers[sum] !== 0) {
+	          console.log('Sum is available! Returning true');
+	          tiers.push(sum);
+	          return true;
+	        } else {
+	          console.log('Sum not available');
+	          return false;
+	        }
+	      }
+	      picks = [];
+	      if (sum > upper + lower) {
+	        i = sum - upper * (quantity - 1);
+	        if (i < lower) {
+	          i = lower;
+	        }
+	        while (i < upper + 1) {
+	          if (availableTiers[i] !== 0) {
+	            console.log('Adding ' + i + ' to picks');
+	            picks.push(i);
+	          }
+	          i++;
+	        }
+	      } else {
+	        i = lower;
+	        max = sum - lower * (quantity - 1);
+	        if (max > upper) {
+	          max = upper;
+	        }
+	        while (i < max + 1) {
+	          if (availableTiers[i] !== 0) {
+	            console.log('Adding ' + i + ' to picks');
+	            picks.push(i);
+	          }
+	          i++;
+	        }
+	      }
+	      console.log('New picks: ' + JSON.stringify(picks));
+	      console.log('picks.length: ' + picks.length);
+	      if (picks.length === 0) {
+	        console.log('Picks not available');
+	        return false;
+	      }
+	      tier = picks[Math.floor(picks.length * Math.random())];
+	      console.log('tier: ' + tier);
+	      tiers.push(tier);
+	      availableTiers[tier]--;
+	      console.log('New tiers: ' + JSON.stringify(tiers));
+	      while (!generateSet(upper, lower, sum - tier, quantity - 1, availableTiers)) {
+	        console.log('Splicing: ' + tiers[tiers.length - 1]);
+	        tiers.splice(tiers.length - 1, 1);
+	        console.log('tiers (post-splice): ' + tiers);
+	        picks.splice(picks.indexOf(tier), 1);
+	        availableTiers[tier]++;
+	        if (picks.length === 0) {
+	          console.log('No possible tiers left to choose!');
+	          return false;
+	        }
+	        tier = picks[Math.floor(picks.length * Math.random())];
+	        tiers.push(tier);
+	        availableTiers[tier]--;
+	        console.log('Attempting tier: ' + tier);
+	      }
+	      return true;
+	    };
+	    availableTiers = [];
+	    for (k = 0, len = available.length; k < len; k++) {
+	      availableTier = available[k];
+	      availableTiers.push(availableTier.length);
+	    }
+	    console.log('availableTiers: ' + availableTiers);
+	    console.log('available: ' + available);
+	    if (generateSet(this.state.list.length - 1, 0, this.state.sum, this.state.quantity, availableTiers)) {
+	      for (l = 0, len1 = tiers.length; l < len1; l++) {
+	        tier = tiers[l];
+	        console.log('Adding tier: ' + tier);
+	        civIndex = Math.floor(Math.random() * available[tier].length);
+	        console.log('Adding ' + available[tier][civIndex] + ' to roster');
+	        nextRoster.push(available[tier][civIndex]);
+	        available[tier].splice(civIndex, 1);
+	      }
+	      freebie = Math.floor(available[this.state.guarantee].length * Math.random());
+	      nextRoster.push(available[this.state.guarantee][freebie]);
+	      available[this.state.guarantee].splice(freebie, 1);
+	      currentRoster.push(nextRoster);
+	    }
+	    return this.setState({
+	      available: available,
+	      roster: currentRoster
+	    });
+	  },
+	  createRoster: function() {
+	    var a, b, i, j;
+	    a = [];
+	    i = 0;
+	    while (i < this.state.roster.length) {
+	      b = [];
+	      j = 0;
+	      while (j < this.state.roster[i].length) {
+	        b.push(this.createCiv(this.state.roster[i], j));
+	        j++;
+	      }
+	      a.push(li({
+	        key: i
+	      }, ul(null, b)));
+	      i++;
+	    }
+	    return ol(null, a);
+	  },
+	  render: function() {
+	    return div({
+	      id: "tier-list"
+	    }, div({
+	      id: "form"
+	    }, form({
+	      onSubmit: this.onSubmit
+	    }, input({
+	      id: "tier-input",
+	      type: "number",
+	      onChange: this.onTierChange,
+	      value: this.state.tier
+	    }), select({
+	      name: "civ",
+	      onChange: this.onCivChange,
+	      value: this.state.civ
+	    }, option({
+	      value: "America"
+	    }, "America"), option({
+	      value: "Arabia"
+	    }, "Arabia"), option({
+	      value: "Assyria"
+	    }, "Assyria"), option({
+	      value: "Austria"
+	    }, "Austria"), option({
+	      value: "Aztecs"
+	    }, "Aztecs"), option({
+	      value: "Babylon"
+	    }, "Babylon"), option({
+	      value: "Brazil"
+	    }, "Brazil"), option({
+	      value: "Byzantium"
+	    }, "Byzantium"), option({
+	      value: "Carthage"
+	    }, "Carthage"), option({
+	      value: "Celts"
+	    }, "Celts"), option({
+	      value: "China"
+	    }, "China"), option({
+	      value: "Denmark"
+	    }, "Denmark"), option({
+	      value: "Egypt"
+	    }, "Egypt"), option({
+	      value: "England"
+	    }, "England"), option({
+	      value: "Ethiopia"
+	    }, "Ethiopia"), option({
+	      value: "France"
+	    }, "France"), option({
+	      value: "Germany"
+	    }, "Germany"), option({
+	      value: "Greece"
+	    }, "Greece"), option({
+	      value: "Huns"
+	    }, "Huns"), option({
+	      value: "Inca"
+	    }, "Inca"), option({
+	      value: "India"
+	    }, "India"), option({
+	      value: "Indonesia"
+	    }, "Indonesia"), option({
+	      value: "Iriquois"
+	    }, "Iriquois"), option({
+	      value: "Japan"
+	    }, "Japan"), option({
+	      value: "Korea"
+	    }, "Korea"), option({
+	      value: "Maya"
+	    }, "Maya"), option({
+	      value: "Mongolia"
+	    }, "Mongolia"), option({
+	      value: "Morocco"
+	    }, "Morocco"), option({
+	      value: "Netherlands"
+	    }, "Netherlands"), option({
+	      value: "Ottomans"
+	    }, "Ottomans"), option({
+	      value: "Persia"
+	    }, "Persia"), option({
+	      value: "Poland"
+	    }, "Poland"), option({
+	      value: "Polynesia"
+	    }, "Polynesia"), option({
+	      value: "Portugal"
+	    }, "Portugal"), option({
+	      value: "Rome"
+	    }, "Rome"), option({
+	      value: "Russia"
+	    }, "Russia"), option({
+	      value: "Shoshone"
+	    }, "Shoshone"), option({
+	      value: "Siam"
+	    }, "Siam"), option({
+	      value: "Songhai"
+	    }, "Songhai"), option({
+	      value: "Spain"
+	    }, "Spain"), option({
+	      value: "Sweden"
+	    }, "Sweden"), option({
+	      value: "Venice"
+	    }, "Venice"), option({
+	      value: "Zulus"
+	    }, "Zulus")), button({
+	      type: "submit"
+	    }, "Submit to tier " + this.state.tier))), div({
+	      id: "list"
+	    }, ol({
+	      start: "0"
+	    }, this.createList())), button({
+	      id: "save",
+	      onClick: this.onSave
+	    }, "Save tier list to local storage"), button({
+	      id: "clear",
+	      onClick: this.onClear
+	    }, "Remove tier list from local storage"), copy({
+	      text: JSON.stringify(this.state.list)
+	    }, button(null, "Copy to clipboard")), div({
+	      id: "paste-form"
+	    }, form({
+	      onSubmit: this.onPasteSubmit
+	    }, input({
+	      type: "text",
+	      value: this.state.paste,
+	      onChange: this.onPasteChange
+	    }), button({
+	      type: "submit"
+	    }, "Submit tier list (Use JSON)"))), div({
+	      id: "generate-form"
+	    }, form({
+	      onSubmit: this.onGenerate
+	    }, input({
+	      type: "number",
+	      value: this.state.guarantee,
+	      onChange: this.onGuaranteeChange
+	    }), input({
+	      type: "number",
+	      value: this.state.quantity,
+	      onChange: this.onQuantityChange
+	    }), input({
+	      type: "number",
+	      value: this.state.sum,
+	      onChange: this.onSumChange
+	    }), button(null, "Generate Roster"))), this.createRoster());
+	  }
+	});
+
+	module.exports = TierListComponent;
+
+
+/***/ },
+/* 178 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(179);
+
+	var CopyToClipboard = _require.CopyToClipboard;
+
+
+	module.exports = CopyToClipboard;
+	//# sourceMappingURL=index.js.map
+
+/***/ },
+/* 179 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.CopyToClipboard = undefined;
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _copyToClipboard = __webpack_require__(180);
+
+	var _copyToClipboard2 = _interopRequireDefault(_copyToClipboard);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
+
+	var CopyToClipboard = exports.CopyToClipboard = _react2.default.createClass({
+	  displayName: 'CopyToClipboard',
+
+	  propTypes: {
+	    text: _react2.default.PropTypes.string.isRequired,
+	    children: _react2.default.PropTypes.element.isRequired,
+	    onCopy: _react2.default.PropTypes.func,
+	    options: _react2.default.PropTypes.shape({
+	      debug: _react2.default.PropTypes.bool,
+	      message: _react2.default.PropTypes.string
+	    })
+	  },
+
+	  onClick: function onClick(event) {
+	    var _props = this.props;
+	    var text = _props.text;
+	    var onCopy = _props.onCopy;
+	    var children = _props.children;
+	    var options = _props.options;
+
+	    var elem = _react2.default.Children.only(children);
+
+	    (0, _copyToClipboard2.default)(text, options);
+	    if (onCopy) {
+	      onCopy(text);
+	    }
+
+	    // Bypass onClick if it was present
+	    if (elem && elem.props && typeof elem.props.onClick === 'function') {
+	      elem.props.onClick(event);
+	    }
+	  },
+	  render: function render() {
+	    var _props2 = this.props;
+	    var _text = _props2.text;
+	    var _onCopy = _props2.onCopy;
+	    var _options = _props2.options;
+	    var children = _props2.children;
+
+	    var props = _objectWithoutProperties(_props2, ['text', 'onCopy', 'options', 'children']);
+
+	    var elem = _react2.default.Children.only(children);
+
+	    return _react2.default.cloneElement(elem, _extends({}, props, { onClick: this.onClick }));
+	  }
+	});
+	//# sourceMappingURL=Component.js.map
+
+/***/ },
+/* 180 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var deselectCurrent = __webpack_require__(181);
+
+	var defaultMessage = 'Copy to clipboard: #{key}, Enter';
+
+	function format(message) {
+	  var copyKey = (/mac os x/i.test(navigator.userAgent) ? '⌘' : 'Ctrl') + '+C';
+	  return message.replace(/#{\s*key\s*}/g, copyKey);
+	}
+
+	function copy(text, options) {
+	  var debug, message, reselectPrevious, range, selection, mark, success = false;
+	  if (!options) { options = {}; }
+	  debug = options.debug || false;
+	  try {
+	    reselectPrevious = deselectCurrent();
+
+	    range = document.createRange();
+	    selection = document.getSelection();
+
+	    mark = document.createElement('span');
+	    mark.textContent = text;
+	    mark.setAttribute('style', [
+	      // reset user styles for span element
+	      'all: unset',
+	      // prevents scrolling to the end of the page
+	      'position: fixed',
+	      'top: 0',
+	      'clip: rect(0, 0, 0, 0)',
+	      // used to preserve spaces and line breaks
+	      'white-space: pre',
+	      // do not inherit user-select (it may be `none`)
+	      '-webkit-user-select: text',
+	      '-moz-user-select: text',
+	      '-ms-user-select: text',
+	      'user-select: text',
+	    ].join(';'));
+
+	    document.body.appendChild(mark);
+
+	    range.selectNode(mark);
+	    selection.addRange(range);
+
+	    var successful = document.execCommand('copy');
+	    if (!successful) {
+	      throw new Error('copy command was unsuccessful');
+	    }
+	    success = true;
+	  } catch (err) {
+	    debug && console.error('unable to copy using execCommand: ', err);
+	    debug && console.warn('trying IE specific stuff');
+	    try {
+	      window.clipboardData.setData('text', text);
+	      success = true;
+	    } catch (err) {
+	      debug && console.error('unable to copy using clipboardData: ', err);
+	      debug && console.error('falling back to prompt');
+	      message = format('message' in options ? options.message : defaultMessage);
+	      window.prompt(message, text);
+	    }
+	  } finally {
+	    if (selection) {
+	      if (typeof selection.removeRange == 'function') {
+	        selection.removeRange(range);
+	      } else {
+	        selection.removeAllRanges();
+	      }
+	    }
+
+	    if (mark) {
+	      document.body.removeChild(mark);
+	    }
+	    reselectPrevious();
+	  }
+
+	  return success;
+	}
+
+	module.exports = copy;
+
+
+/***/ },
+/* 181 */
+/***/ function(module, exports) {
+
+	
+	module.exports = function () {
+	  var selection = document.getSelection();
+	  if (!selection.rangeCount) {
+	    return function () {};
+	  }
+	  var active = document.activeElement;
+
+	  var ranges = [];
+	  for (var i = 0; i < selection.rangeCount; i++) {
+	    ranges.push(selection.getRangeAt(i));
+	  }
+
+	  switch (active.tagName.toUpperCase()) { // .toUpperCase handles XHTML
+	    case 'INPUT':
+	    case 'TEXTAREA':
+	      active.blur();
+	      break;
+
+	    default:
+	      active = null;
+	      break;
+	  }
+
+	  selection.removeAllRanges();
+	  return function () {
+	    selection.type === 'Caret' &&
+	    selection.removeAllRanges();
+
+	    if (!selection.rangeCount) {
+	      ranges.forEach(function(range) {
+	        selection.addRange(range);
+	      });
+	    }
+
+	    active &&
+	    active.focus();
+	  };
+	};
 
 
 /***/ }
